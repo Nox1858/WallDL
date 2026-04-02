@@ -12,6 +12,7 @@ from datetime import datetime as d
 from datetime import timedelta
 
 from threading import Thread
+from dl_library import *
 
 API_KEY = "your stuff here"
 USER_ID = "your stuff here"
@@ -246,32 +247,6 @@ def setflag(imgid,flag):
     data["flag"] = flag
     setdata(imgid,data)
 
-def tagrequest(tags):
-    cookies={
-        #your stuff here
-    }
-
-    link = f"https://gelbooru.com/index.php?page=dapi&s=tag&q=index&json=1&api_key={API_KEY}&user_id={USER_ID}&limit=0&names="
-    tags = tags.replace("&#039;","'").replace("+","%2b").replace("&gt;",">").replace("&lt;","<").replace("&amp;","%26").replace("&quot;",'"').replace("#","%23").replace("/","%2f")
-    link += tags
-    # print(tags)
-    # print("requesting info about: "+tags)
-    timeout = 0
-    while(timeout < 5):
-        # if(timeout > 0.5): print("sleeping",timeout,"on",link)
-        time.sleep(timeout)
-        timecounter2 = time.time_ns()
-        r = requests.get(link,cookies=cookies)
-        # printtime(timecounter2,"raw request time:")
-        if(r.status_code == 200): timeout = 10
-        timeout += randrange(200,1000)/20000
-    r = r.json()
-    try:
-        return r["tag"]
-    except:
-        print("didn't find any tags")
-        return []
-
 
 def initdata(imgid,predata,fix=False):
     timecounter = time.time_ns()
@@ -340,32 +315,6 @@ def initdata(imgid,predata,fix=False):
     # printtime(timecounter,f"handled tags for {imgid} in: ")
 
 
-def handleTagWebRequest(fullReq):
-    timecounter = time.time_ns()
-    streq = ""
-    for thing in fullReq:
-        streq += thing+" "
-    newdata = tagrequest(streq)
-    for tagdata in newdata:
-        match tagdata["type"]:
-            case 0:
-                tagtype = "general"
-            case 1:
-                tagtype = "artist"
-            case 3:
-                tagtype = "copyright"
-            case 4:
-                tagtype = "character"
-            case 5:
-                tagtype = "meta"
-            case _:
-                print("found tag with type unknwon",tagdata["type"])
-                tagtype = "unknown"
-                with open("unknowntags.txt","a") as f: f.write(tagdata["name"]+"\n")
-        # print("updated",tagdata["name"])
-        fullTagData[tagdata["name"]] = {'name':tagdata["name"],'id': tagdata["id"], 'count': tagdata["count"], 'type': tagtype, 'ambiguous': tagdata["ambiguous"], 'date-added':str(d.now())}
-    # printtime(timecounter,"finished tagrequest in: ")
-
 def handleTagRequests(fixing=False):
     timecounter = time.time_ns()
     fullRequests = {}
@@ -413,239 +362,6 @@ def handleTagRequests(fixing=False):
         t2.start()
         InitThreads.append(t2)
 
-# from moviepy.video.io.VideoFileClip import VideoFileClip
-
-def saveImg(link,imgid,ext):
-    timecounter = time.time_ns()
-    timeout = 0
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36",
-        # "Accept": "image/avif,image/webp,image/apng,image/,/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": link,
-        "Connection": "keep-alive",
-    }
-    while(timeout < 2):
-        # if(timeout > 0.5): print("sleeping",timeout,"on",link)
-        time.sleep(timeout)
-        timecounter2 = time.time_ns()
-        # print("trying to get",link)
-        r = requests.get(link,headers=headers)
-        # print(r.content)
-        rawDLTimes.append(printtime(timecounter2,f"downloaded {imgid}{ext} in ",out=False))
-        if(r.status_code == 200): timeout = 10
-        timeout += randrange(200,1000)/20000
-    imgdata = r.content
-    size = len(imgdata)/1000
-    totalDLSize.append(size)
-    if(size > 1000):
-        size = str(size/1000)[:6]+"mb"
-    else:
-        size = str(size)[:6]+"kb"
-    totalDLTime.append(printtime(timecounter,f"downloaded {imgid}{ext} of {size} in: "))
-    timecounter = time.time_ns()
-    if("webm" in ext or "mp4" in ext):
-        print("You'll probably not want to convert to gifs right now, so we'll skip this...")
-        with open(Wallpaper_Folder+str(imgid)+ext, 'wb') as f: f.write(imgdata)
-
-        # with open("videotmp/"+str(imgid)+ext, 'wb') as f: f.write(imgdata)
-        # clip = VideoFileClip("videotmp/"+str(imgid)+ext)
-        # clip.write_gif("videotmp/"+str(imgid)+".gif")
-    else:
-        with open(Wallpaper_Folder+str(imgid)+ext, 'wb') as f: f.write(imgdata)
-    totalSaveTime.append(printtime(timecounter,f"saved {imgid} of {size} in: ",out=False))
-
-def getImg(link,imgid,ext,notify=True,download=True):
-    if(checkExisting(imgid,notify)):
-        return False
-    timecounter = time.time_ns()
-    if("mp4" in ext or "webm" in ext):
-        print("this is a video, conversion still wip...")
-        return False
-    #     ext = ".gif"
-    elif(download):
-        t1 = Thread(target=saveImg, args=(link,imgid,ext))
-        t1.start()
-        ImgThreads.append(t1)
-    # print("download thread creation overhead:",(time.time_ns()-timecounter)/1000000,"ms")
-    return f"{imgid}{ext}"
-
-
-def apirequest(tags,random=True,limit=0):
-    # timecounter = time.time_ns()
-    cookies={
-        #your stuff here
-    }
-
-    link = f"https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&api_key={API_KEY}&user_id={USER_ID}&limit={limit}&tags="
-    for tag in tags:
-        link += str(tag)+"+"
-    if(random): link += "sort:random"
-
-    timeout = 0
-    # print("link preperation overhead:",(time.time_ns()-timecounter)/1000,"microsec")
-    while(timeout < 2):
-        # if(timeout > 0.5): print("sleeping",timeout,"on",link)
-        time.sleep(timeout)
-        timecounter2 = time.time_ns()
-        r = requests.get(link,cookies=cookies)
-        rawReqTimes.append(printtime(timecounter2,"Post request completed in ",out=False))
-        if(r.status_code == 200): timeout = 10
-        else: print(r.status_code, timeout)
-        timeout += randrange(200,1000)/20000
-    r = r.json()
-
-    try:
-        # print("got posts in total",(time.time_ns()-timecounter)/1000000,"ms")
-        return r["post"]
-    except:
-        print("failed to find any posts matching filters")
-        return False
-
-def downloadImgs(tags=[], random=True, limit=1, max_tries = 5, notifications=True,download=True):
-    timecounter = time.time_ns()
-    if(max_tries < 1): return False
-    apilimit = limit
-    if(limit > 100): apilimit = 0
-    posts = apirequest(tags,random,apilimit)
-    downloaded = 0
-    latest = False
-    if(limit > 10):
-        notifications = False
-    totalPostReqTime.append(printtime(timecounter,"post request finished in: ",out=False))
-    if(posts):
-        timecounter = time.time_ns()
-        for post in posts:
-            if(downloaded < limit):
-                postid = post["id"]
-                url = post["file_url"]
-                # print(url)
-                ext = post["image"][post["image"].find("."):]
-                img = getImg(url,postid,ext,notifications,download)
-                # if("webm" in ext or "mp4" in ext):
-                #     ext = ".gif"
-                if(img):
-                    latest = postid
-                    # timecounter = time.time_ns()
-                    # print("adding",img,"to tagreq list")
-                    allTagRequests[post["id"]] = post
-                    # print("initdata thread creation overhead:",(time.time_ns()-timecounter)/1000000,"ms")
-                    downloaded += 1
-        if(downloaded < limit):
-            if(not random): tags.append(f"id:<{latest}")
-            return downloadImgs(tags,random,limit-downloaded,max_tries-1,notifications)
-        if(latest):
-            # printtime(timecounter,"post handling and setup overhead: ")
-            return str(latest)+ext
-    return downloadImgs(tags,random,limit-downloaded,max_tries-1,notifications)
-
-def quickdl(tags=[]):
-    timecounter = time.time_ns()
-    posts = apirequest(tags,True,1)
-    cookies={
-        #your stuff here
-    }
-    link = f"https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&api_key={API_KEY}&user_id={USER_ID}&limit=1&tags=sort:random"
-    r = requests.get(link,cookies=cookies).json()
-    post = r["post"][0]
-    postid = post["id"]
-    url = post["file_url"]
-    ext = post["image"][post["image"].find("."):]
-    if(getImg(url,postid,ext,False,True)):
-        allTagRequests[post["id"]] = post
-        timecounter = timeselectimgs.time_ns()
-        tags = post["tags"]
-        tags = tags.split()
-        tagreq = []
-        for tag in tags:
-            #Checks if data on a tag is present, otherwise or if too old add to update list
-            try:
-                tagdata = fullTagData[tag]
-                # date = d.strptime((tagdata["date-added"]), "%Y-%m-%d %H:%M:%S.%f")
-                # if(d.now()-date > timedelta(days = 10)):
-                #     print("updating",tag,"since it's more than 10d old'")
-                #     fullRequests[tag] = True
-            except Exception as e:
-                tagreq.append(tag)
-        print("need to update",len(tagreq),"tags...")
-        # printtime(timecounter,"tagrequest setup overhead: ")
-        # time.sleep(3)
-        handleTagRequests(tagreq)
-        initdata(postid,post,False)
-
-
-    #     timecounter = time.time_ns()
-    # print("initializing data for",imgid)
-    # tags = predata["tags"]
-    # artist = []; copyright = []; character = []; meta = []; general = []; failed = []
-    # try:
-    #     tags = tags.split()
-    # except:
-    #     True
-    # for tag in tags:
-    #     try:
-    #         tagtype = fullTagData[tag]["type"]
-    #         match tagtype:
-    #             case "general": general.append(tag)
-    #             case "artist": artist.append(tag)
-    #             case "copyright": copyright.append(tag)
-    #             case "character": character.append(tag)
-    #             case "meta": meta.append(tag)
-    #             case "unknown":
-    #                 print("found tag with unknown type:",tag,tagtype)
-    #                 general.append(tag)
-    #                 with open("unknowntags.txt","a") as f: f.write(tag+"\n")
-    #     except Exception as e:
-    #         print("failed to find",tag,e)
-    #         failed.append(tag)
-    #
-    # if(fix):
-    #     if(len(artist) == 0):
-    #         print(imgid,"doesn't have an artist, setting unknown. Link:",predata["url"])
-    #         artist = ["_unknown_"]
-    #     data = {
-    #         "download-date":predata["download-date"],
-    #         "flag":predata["flag"],
-    #         "rating":predata["rating"],
-    #         "width":predata["width"],
-    #         "height":predata["height"],
-    #         "artist":artist,
-    #         "character":character,
-    #         "copyright":copyright,
-    #         "meta":meta,
-    #         "tags":tags,
-    #         "url":predata["url"]
-    #         }
-    # else:
-    #     if(len(artist) == 0):
-    #         print(imgid,"doesn't have an artist, setting unknown. Link:",predata["file_url"])
-    #         artist = ["_unknown_"]
-    #     data = {
-    #         "download-date":str(d.now()),
-    #         "flag":"none",
-    #         "rating":predata["rating"],
-    #         "width":predata["width"],
-    #         "height":predata["height"],
-    #         "artist":artist,
-    #         "character":character,
-    #         "copyright":copyright,
-    #         "meta":meta,
-    #         "tags":tags,
-    #         "url":predata["file_url"]
-    #         }
-    #
-    # setdata(imgid,data)
-    # if(len(failed) == 0): return False
-    # return failed
-
-
-        # print("finished handling tagrequests")
-        for t in InitThreads:
-            t.join()
-        for t in ImgThreads:
-            t.join()
-        setWallpaper(str(postid)+ext)
-
 def handleImg(image,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag):
     selectimgs = []
     # timecounter = time.time_ns()
@@ -681,28 +397,6 @@ def handleImg(image,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,f
     return False
 # printtime(timecounter,"completed image check in ")
 
-# handleThreads = []
-
-# def handleImgs(images,start,end,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag):
-#     # threads = []
-#     if(end-start > 3000):
-#         timecounter = time.time_ns()
-#         mid = start+int((end-start)/2)
-#         t1 = Thread(target=handleImgs, args=(images,start,mid,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag))
-#         t2 = Thread(target=handleImgs, args=(images,mid,end,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag))
-#         t1.start()
-#         t2.start()
-#         handleThreads.append(t1)
-#         handleThreads.append(t2)
-#         printtime(timecounter,"thread setup overhead ")
-#         timecounter = time.time_ns()
-#
-#         # handleImgs(images,mid,end,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag)
-#         # printtime(timecounter, "handling completed in ")
-#     else:
-#         print(start,end)
-#         for image in images[start:end]:
-#             handleImg(image,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag)
 selectimgs = []
 
 def filterThreadHandler(images,latest,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag):
@@ -804,21 +498,6 @@ def filterImgs(args):
         #     filterThreadHandler(latest,image,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag)
 
 
-    # handlethread = []
-    # for image in images:
-    #     timecounter3 = time.time_ns()
-    #     if(latest not in image):
-    #         if(len(handlethread) < 500):
-    #             timecounter = time.time_ns()
-    #             t = Thread(target=hanldeImg,args=(image,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag))
-    #             t.start()
-    #             handlethread.append(t)
-    #         else:
-    #             hanldeImg(image,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag)
-    #         printtime(timecounter,"thread setup overhead ")
-    # for t in handlethread:
-    #     t.join()
-
     # printtime(timecounter4,"filtering done in ")
     print(len(selectimgs))
     return selectimgs
@@ -900,18 +579,6 @@ def fixALLImgTags(maxnum=10):
             tofix.append(imgid)
             # with open(f"tags/default.json","r") as f: return json.load(f)
 
-        # artist = predata["artist"]
-        # flag = predata["flag"]
-        # # print(artist,flag)
-        # if("_unknown_" in artist):
-        #     if(flag == "none"):
-        #         tofix.append(imgid)
-        #     else:
-        #         print(imgid,flag)
-        # else:
-        #     if(flag!="none"):
-        #         print(imgid,flag)
-
     fixThreads = []
     for i in range(maxnum):
         imgid = tofix.pop(randrange(0,len(tofix)))
@@ -930,62 +597,6 @@ def fixALLImgTags(maxnum=10):
 
     printtime(timecounter,f"fixed all tags in: ")
 
-
-
-    # norating = []
-    # failedTags = []
-    # for image in images:
-    #     # print(f"handling {image}")
-    #     imgid = image[:image.find(".")]
-    #     predata = getdata(imgid)
-    #     flag = predata["flag"]
-    #     copyright = predata["copyright"]
-    #     character = predata["character"]
-    #     meta = predata["meta"]
-    #     tags = predata["tags"]
-    #     try:
-    #         tags = tags.split()
-    #     except:
-    #         True
-    #     for tag in tags:
-    #         try:
-    #             tagtype = fullTagData[tag]["type"]
-    #             match tagtype:
-    #                 case "general": general.append(tag)
-    #                 case "artist": artist.append(tag)
-    #                 case "copyright": copyright.append(tag)
-    #                 case "character": character.append(tag)
-    #                 case "meta": meta.append(tag)
-    #                 case "unknown": general.append(tag)
-    #         except Exception as e:
-    #             # print("failed to find",tag,e)
-    #             general.append(tag)
-    #             failedTags.append(tag)
-        # if(len(artist) == 0): noartist.append(imgid)
-        # if(len(artist) == 1 and artist[0] == "_unknown_"): noartist.append(imgid)
-            # print(image,"has unknown artist")
-    #     # print(predata["rating"])
-    #     data = {
-    #         "download-date":predata["download-date"],
-    #         "flag":predata["flag"],
-    #         "rating":predata["rating"],
-    #         "width":predata["width"],
-    #         "height":predata["height"],
-    #         "artist":artist,
-    #         "character":character,
-    #         "copyright":copyright,
-    #         "meta":meta,
-    #         "tags":tags,
-    #         "url":predata["url"]
-    #         }
-    #     setdata(imgid,data)
-    #     # printtime(timecounter2,f"fixed tags for {imgid} in: ")
-    # print("failed to find",failedTags)
-    # print("these have no artist:",noartist)
-
-
-# def fixtagdata():
-#     for image in images
 
 def quickrandexist():
     images = [f for f in os.listdir(Wallpaper_Folder)]
@@ -1030,86 +641,6 @@ def getprevwall(num): #0 is current, 1 is last, 2 is the one before last etc
         if(image[:image.find(".")] == str(imid)):
             setWallpaper(image)
     return imid
-
-
-
-def get(args,quiet = False, setwall = True, max_tries = 5):
-    timecounter102 = time.time_ns()
-    global fullTagData
-    with open(f"tagdata.json", "r") as f:
-        fullTagData= json.load(f)
-
-    if(not quiet): printtime(timecounter102,"loaded entire tagdata in ")
-
-    limit = 1
-    tags = []
-    random = True
-    for thing in args:
-        if("--limit" in thing):
-            limit = int(thing[thing.find(":")+1:])
-        elif("--max_tries" in thing):
-            max_tries = int(thing[thing.find(":")+1:])
-        elif("--safe" in thing):
-            tags.append("rating:general")
-        elif("--sort" in thing):
-            random = False
-        else:
-            tags.append(thing)
-
-    if(not quiet):  notify(f"getting wallpaper...")
-
-    if(limit > 400): max_tries = int(limit/100)+1
-    latest = downloadImgs(tags,random,limit,max_tries)
-    handleTagRequests()
-    if(not quiet): print("finished handling tagrequests")
-
-    for t in InitThreads:
-        t.join()
-    if(not quiet): print("finished handling all imgtags")
-
-    for t in ImgThreads:
-        t.join()
-    if(latest and setwall):
-        setWallpaper(latest)
-
-    if(not quiet):
-        avrsize = 0
-        totalsize = 0
-        avrdltime = 0
-        avrsavetime = 0
-        avrpostreqtime = 0
-        maxRawDLtime = 0
-        maxRawReqtime = 0
-
-        for size in totalDLSize: totalsize += (size/1000)
-        for times in totalDLTime: avrdltime += (times/1000000)/limit
-        for times in totalSaveTime: avrsavetime += (times/1000000)/limit
-        for times in totalPostReqTime: avrpostreqtime += (times/1000000)/limit
-        for times in rawDLTimes:
-            if(times > maxRawDLtime): maxRawDLtime = times
-        for times in rawReqTimes:
-            if(times > maxRawReqtime): maxRawReqtime = times
-
-        avrTotalImgTime = avrpostreqtime + avrdltime + avrsavetime
-
-        avrsize = str(totalsize/limit)[:6]+"mb"
-        totalsize = str(totalsize)[:6]+"mb"
-        avrdltime = str(avrdltime/1000)[:6]+"sec"
-        avrsavetime = str(avrsavetime)[:6]+"ms"
-        avrTotalImgTime = str(avrTotalImgTime/1000)[:6]+"sec"
-        maxRawTotaltime = maxRawDLtime+maxRawReqtime
-        maxRawTotal = str(maxRawTotaltime/1000000000)[:6]+"sec"
-        maxRawDLtime = str((maxRawDLtime)/1000000000)[:6]+"sec"
-        maxRawReqtime = str((maxRawReqtime)/1000000000)[:6]+"sec"
-
-
-        print(f"total size: {totalsize}\naverage Size: {avrsize}\naverage DL time: {avrdltime}\naverage save time: {avrsavetime}\naverage total time for image DL: {avrTotalImgTime}\nmax raw request time: {maxRawReqtime}\nmax raw DL time: {maxRawDLtime}\ntotal max raw time: {maxRawTotal}")
-    endtime = printtime(timecounter102,f"got {len(totalDLTime)} images in: ",True)
-    if(not quiet): print(f"total overhead: {formattime(endtime-maxRawTotaltime)}")
-
-    with open(f"tagdata.json", "w") as f: json.dump(fullTagData,f)
-    return len(totalDLTime)
-
 
 def add_fave(name, querry):
     querry.append("--sort")
