@@ -4,6 +4,7 @@ import json
 import os
 from math import ceil
 from timer import printtime, notify
+from filehandler import getAllImages, getData
 import time
 
 @dataclass
@@ -74,8 +75,6 @@ def parseLocalArgs(args: list[str]) -> LocalFilterArgs:
 
     return parsed
 
-def getAllImages(imagePath: str) -> list[str]:
-    return [f for f in os.listdir(imagePath)]
 
 def splitList(l :list[str], n: int) -> list[list[str]]:
     n = max(1, n)
@@ -99,8 +98,7 @@ def filterLocalImages(parsedArgs: LocalFilterArgs, imagePath: str, latest: str) 
     part_imgs = splitList(images, chunk_size)
 
     filtered_images: list[str] = []
-    t = time.time_ns()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=thread_count) as executor:
         futures = [
             executor.submit(filterThreadHandler, chunk, parsedArgs, latest)
             for chunk in part_imgs
@@ -108,12 +106,12 @@ def filterLocalImages(parsedArgs: LocalFilterArgs, imagePath: str, latest: str) 
 
         for future in concurrent.futures.as_completed(futures):
             filtered_images.extend(future.result())
-    printtime(t,message="Thread Time ", out=True)
+
     return filtered_images
 
 def filterThreadHandler(images: list[str], args: LocalFilterArgs, latest: str) -> list[str]:
     selection = []
-    perTT = time.time_ns()
+    t = time.time_ns()
     for image in images:
         image_id = image.rsplit(".", 1)[0]
 
@@ -122,23 +120,22 @@ def filterThreadHandler(images: list[str], args: LocalFilterArgs, latest: str) -
 
         if handleImg(image, args):
             selection.append(image)
-    printtime(perTT, message="ThreadTime: ",out=True)
+    printtime(t, message="Thread Time: ", out=True)
     return selection
-
-def getdata(imgid: str) -> dict:
-    try:
-        with open(f"tags/{imgid}.json","r") as f: return json.load(f)
-    except Exception as e:
-        print("failed to load tags of",imgid,"exception:",e)
-        with open(f"tags/default.json","r") as f: return json.load(f)
 
 def handleImg(image: str, args: LocalFilterArgs) -> bool:
 
     img_id = image.rsplit(".", 1)[0]
-    imgdata = getdata(img_id)
+    imgdata = getData(img_id)
+    ##print(imgdata)
 
-    if "exclude" in imgdata["flag"]:
-        return False
+    try:
+        if "exclude" in imgdata['flag']:
+            return False
+    except Exception as e:
+        print(image)
+        print(imgdata)
+        exit()
 
     if args.rating and args.rating not in imgdata["rating"]:
         return False
