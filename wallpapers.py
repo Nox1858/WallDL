@@ -25,32 +25,85 @@ COPY_OUT_PATH = "/output/if/you/want/an/image"
 
 
 HELPSTRING = """Fun Utility for downloading Wallpapers from a questionable Source :)
+Possible args:
+get [args]
+    gets an image using args as geltags
 
-ALL OF THIS IS OUTDATED, WILL NEED TO UPDATE (Status Oct-2025)
-add 'repeat:x:y' for repeating the following command x times with y sec delay
-add 'tries:x' for changing retry amount
-add 'keepprev' to flag the previous wallpaper for keeping, by default the _latest flag is just moved
+    --limit:NUM gets NUM images instead of just one (Gel can return less than this number if there are duplicates or less results)
 
-You can use the following modes
-str(d.now())
-flag [specify glag]: sets latest's flag to the specified
+    --max_tries:NUM changes number of maxtries, usually not necessary, only really usefull if you look for random images and most but not all are already downloaded
 
-get [flag] [tags]:  gets a random image with default filter and tags
-    --limit         specify the number of images to download
-    --max_tries     change maximum number of retries (usually not necessary)
-    --safe          general only
-    --sort          sort by id instead of randomly
+    --safe short for "rating:general"
 
-exist [flag] [tags]:gets an existing image based on tags
-    --wide          only wide images
-    --narrow        only narrow images
-    --square        only square images
-    height:int      min int height
-    width:int       min int width
-    flag:string     img has this flag ("exclude" doesn't work)
+    --sort returns images in descending order of ID (newest image first) instead of randomly ordered
 
-'reset'             applies the default wallpaper
-'help'              show this       """
+exist [args]
+    this:IMAGE_ID sets this image
+
+    flag:FLAG looks for all images with this flag
+
+    --wide images where width > height (incl square)
+
+    --narrow images where width < height (incl square)
+
+    --square images where width = height
+
+    height:NUM images with this minimum height (accepts 1k,2k,4k as shorts for the corresponding pixelsizes)
+
+    width:NUM same as height but for width
+
+    any other arg is used as tags (including appending "-" to exclude tags, and also including "rating:XYZ")
+
+flag FLAG
+    sets the flag of the current image to FLAG
+
+fixtags
+    currently broken (-_-)
+
+getags
+    prints tags of the current image
+
+recache
+    refreshes all searches in cache that have been used a bit (deletes the rest)
+
+prev [num]
+    sets the previous image, or goes the specifed number of images back. Careful: [num] is WIP and since we just add the latest image to the queue, it will get flooded and you will get the same image if you repeateldy do it.
+
+prevsearch
+    triggers the last used search with exist or direct name search again (very cool, I love this one)
+
+addfave NAME [TAGS]
+    adds an entry in the fave list with the given name and tags, so that you can subsequently use udpate_faves to get the newest images of your favorite searches
+
+update_faves [NUM]
+    gets the newest NUM images (default is 99) of all your faves
+
+reset:
+    sets the image "default.png" as wallpaper (will fail if it doesn't exist obviously)
+
+copy:
+    if no further arguments added copies the current wallpaper to the default copyout directory. Otherwise looks for ALL images matching the given tags and copies them to the default directory,
+printflags
+    looks through all images and prints all flags that you set (just to remind you if you forgot how you called something)
+
+refresh
+    should set the current wallpaper to latest if your wallpaper manager messed up, but you wallpaper manager messes up and it currently doesn't work
+
+qer
+    QuickRandomExist (no typo here) is a way quicker version of "exist" over all images
+
+compare
+    WIP should print stats and allow comparing tags and stuff but I lost the implementation file :(
+
+taginfo
+    WIP
+
+help
+    prints this thing here
+
+If you pass an argument that is not in this list it'll cache a new search using the first argument as the name and the remaining ones as tags and subsequently you can access this search by just using the name (so just "./wallpapers.py NAME")
+
+"""
 
 fullTagData = {}
 ImgThreads = []
