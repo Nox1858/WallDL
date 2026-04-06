@@ -1,4 +1,8 @@
 from webreq_helpers import *
+from AppContext import AppContext
+import os
+import json
+from timer import printtime, notify
 
 def handleTagWebRequest(fullReq):
     # timecounter = time.time_ns()
@@ -83,10 +87,10 @@ def downloadImgs(tags=[], random=True, limit=1, max_tries = 5, notifications=Tru
 
 
 
-def get(args,quiet = False, setwall = True, max_tries = 5):
+def get(args, ctx: AppContext, quiet = False, setwall = True, max_tries = 5):
     timecounter102 = time.time_ns()
     global fullTagData
-    with open(f"tagdata.json", "r") as f:
+    with open(os.path.join(ctx.env.get("WALLPAPER_CACHE"), "tagdata.json"), "r") as f:
         fullTagData= json.load(f)
 
     if(not quiet): printtime(timecounter102,"loaded entire tagdata in ")
@@ -157,5 +161,5 @@ def get(args,quiet = False, setwall = True, max_tries = 5):
     endtime = printtime(timecounter102,f"got {len(totalDLTime)} images in: ",True)
     if(not quiet): print(f"total overhead: {formattime(endtime-maxRawTotaltime)}")
 
-    with open(f"tagdata.json", "w") as f: json.dump(fullTagData,f)
+    with open(os.path.join(ctx.evn.get("WALLPAPER_CACHE"), "tagdata.json"), "w") as f: json.dump(fullTagData,f)
     return len(totalDLTime)

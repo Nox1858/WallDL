@@ -1,9 +1,13 @@
+#!/usr/bin/python3
+
 import requests
 import json
 import os
 from ntpath import join
 import subprocess
 import time
+
+import shutil
 
 import sys
 from random import randrange
@@ -12,16 +16,33 @@ from datetime import datetime as d
 from datetime import timedelta
 
 from threading import Thread
+
+#Custom Stuff
 from dl_library import *
 
-API_KEY = "your stuff here"
-USER_ID = "your stuff here"
+import filters
 
-Wallpaper_Folder = 'path/where/images/will/be/stored'
+from env import Environment
+from timer import printtime, notify, formattime
+from filehandler import getData, getAllImages, setData, checkExisting
 
-DESKTOP_PATH = "/home/user/Desktop/"
-WALL_HOME_PATH = "/path/where/cache/and/stuff/will/be/stored/"
-COPY_OUT_PATH = "/output/if/you/want/an/image"
+from cache import SearchCache
+from AppContext import AppContext
+
+env = Environment(".env")
+
+API_KEY = env.get("API_KEY")
+USER_ID = env.get("USER_ID")
+
+ctx = AppContext
+ctx.env = env
+cache = SearchCache("searchcache.json", ctx)
+
+Wallpaper_Folder = env.get("WALLPAPER_IMAGES")
+
+DESKTOP_PATH = env.get("DESKTOP_PATH")
+WALL_HOME_PATH = env.get("WALLPAPER_CACHE")
+COPY_OUT_PATH = env.get("COPY_OUTPUT_DESTINATION")
 
 
 HELPSTRING = """Fun Utility for downloading Wallpapers from a questionable Source :)
@@ -117,112 +138,6 @@ totalPostReqTime = []
 rawReqTimes = []
 rawDLTimes = []
 
-def addtocache(querry,results,name = False,used = 0):
-    querry.sort()
-    with open("searchcache.json", "r") as f: data = json.load(f)
-    found = False
-    if(name):
-        try:
-            used = data[name]["used"]
-        except:
-            True
-        data[name] = {"querry":querry,"used":used,"date":str(d.now()),"results":results}
-        found = True
-    else:
-        for entry in data:
-            if(data[entry]["querry"] == querry):
-                used = data[entry]["used"]
-                data[entry] = {"querry":querry,"used":used,"date":str(d.now()),"results":results}
-                found = True
-                break
-    if(not found):
-        data[str(len(data))] = {"querry":querry,"used":used,"date":str(d.now()),"results":results}
-    print("cached",querry)
-    with open("searchcache.json", "w") as f: json.dump(data,f)
-
-def getcache(querry,name=False,quiet=False):
-    with open("searchcache.json", "r") as f: data = json.load(f)
-    if(name):
-        try:
-            used = data[name]["used"] + 1
-            data[name]["used"] = used
-            date = d.strptime(data[name]["date"], "%Y-%m-%d %H:%M:%S.%f")
-            if(not quiet): print("previously used this search",used,"times")
-            if(d.now()-date > timedelta(days = 3)):
-                notify("this cache is >3d old, maybe update it? cached on",date)
-            with open("searchcache.json", "w") as f: json.dump(data,f)
-            return data[name]["results"]
-        except:
-            if(not quiet): print("search not cached")
-            return False
-    else:
-        querry.sort()
-        for entry in data:
-            if(data[entry]["querry"] == querry):
-                used = data[entry]["used"] + 1
-                data[entry]["used"] =  used
-                date = data[entry]["date"]
-                if(not quiet): print("previously used this search",used,"times")
-                date = d.strptime(data[entry]["date"], "%Y-%m-%d %H:%M:%S.%f")
-                if(d.now()-date > timedelta(days = 3) and used > 3):
-                    notify("this cache is >3d old, maybe update it? cached on",date)
-                with open("searchcache.json", "w") as f: json.dump(data,f)
-                return data[entry]["results"]
-    if(not quiet): print("search not cached")
-    return False
-
-def refresh_cache():
-    with open("searchcache.json", "r") as f: data = json.load(f)
-    with open("searchcache.json", "w") as f: f.write("{}")
-    for entry in data:
-        date = d.strptime(data[entry]["date"], "%Y-%m-%d %H:%M:%S.%f")
-        used = data[entry]["used"]
-
-        # print(date,used)
-        if(used < 2):
-            print(entry,data[entry]["querry"],"is not used often, skipping update...")
-        else:
-            results = []
-            querry = []
-            querry = data[entry]["querry"]
-            print("updating",entry,querry,used,date)
-            prevlen = len(data[entry]["results"])
-            if(len(querry) == 0):
-                # results = [f for f in os.listdir(Wallpaper_Folder)]
-                print("empty querry, skipping...")
-            else:
-                results = filterImgs(querry)
-                # selectimgs = [f for f in os.listdir(Wallpaper_Folder)]
-                print("found",len(results),"images with given tags, previously was",prevlen)
-                addtocache(querry,results,entry,used)
-    addtocache([],[f for f in os.listdir(Wallpaper_Folder)],"any",data["any"]["used"])
-    print("refreshed 'any'")
-
-def formattime(timenum):
-    timesize = "ns"
-    if(timenum > 1000):
-        timenum = timenum/1000
-        timesize = "microsec"
-        if(timenum > 1000):
-            timenum = timenum/1000
-            timesize = "ms"
-            if(timenum > 1000):
-                timenum = timenum/1000
-                timesize = "s"
-                if(timenum > 100):
-                    timenum = timenum/60
-                    timesize = "min"
-    return str(timenum)[:6]+timesize
-
-def notify(message):
-    subprocess.Popen(f'notify-send "{message}"', shell=True)
-
-def printtime(timer,message="",notification=False,out=True):
-    timeval = (time.time_ns()-timer)
-    timestr = formattime(timeval)
-    if(out): print(f"{message}{timestr}")
-    if(notification): notify(f"{message}{timestr}")
-    return timeval
 
 
 def sendwallpaper(filepath, plugin='org.kde.image'):
@@ -242,19 +157,6 @@ def sendwallpaper(filepath, plugin='org.kde.image'):
     plasma.evaluateScript(jscript % (plugin, plugin, filepath))
 
 
-def getdata(imgid):
-    try:
-        with open(f"tags/{imgid}.json","r") as f: return json.load(f)
-    except Exception as e:
-        print("failed to load tags of",imgid,"exception:",e)
-        with open(f"tags/default.json","r") as f: return json.load(f)
-
-def setdata(imgid,data):
-    # timecounter = time.time_ns()
-    with open(f"tags/{imgid}.json","w") as f:
-        json.dump(data,f)
-        # print("imgtags write overhead:",(time.time_ns()-timecounter)/1000000,"ms")
-
 def setWallpaper(image):
     filepath = f"{Wallpaper_Folder}{image}"
     if("." in image):
@@ -265,40 +167,18 @@ def setWallpaper(image):
     with open(f"{DESKTOP_PATH}/wallpaperURL.desktop","w") as f: f.write(f"[Desktop Entry]\nIcon=/{WALL_HOME_PATH}/gelbooru-logo.svg\nName=wallpaperURL\nType=Link\nURL[$e]=https://gelbooru.com/index.php?page=post&s=view&id={imgid}")
     with open ("latest.txt","w") as f: f.write(imgid)
     with open ("history.txt","a") as f: f.write(f"{imgid}; {d.now()}\n")
-    imgdata = getdata(imgid)
+    imgdata = getData(imgid)
     try:
         imgdata["occurances"] += 1
     except:
         imgdata["occurances"] = 1
-    setdata(imgid, imgdata)
-
-
-
-
-def checkExisting(imgid,sendnote = True):
-    images = [f for f in os.listdir(Wallpaper_Folder)]
-    for image in images:
-        if(image[:image.find(".")] == str(imgid)): return True
-    # with open ("downloaded.txt","r") as f: data = f.read()
-    # if (str(imgid) in data):
-        # # print(f"already downloaded {imgid}")
-        # return True
-    with open("downloaded.txt","a") as f: f.write(str(imgid)+"\n")
-    # if(sendnote): notify(f"added {imgid}")
-    return False
-
-
-# def retryTags(imgid):
-#     print(f"{imgid} has ill formatted or no tags, retrying...")
-#     post = apirequest([f"id:{imgid}"])[0]
-#     initdata(imgid,post)
-
+    setData(imgid, imgdata)
 
 
 def setflag(imgid,flag):
-    data = getdata(imgid)
+    data = getData(imgid)
     data["flag"] = flag
-    setdata(imgid,data)
+    setData(imgid,data)
 
 
 def initdata(imgid,predata,fix=False):
@@ -362,7 +242,7 @@ def initdata(imgid,predata,fix=False):
             "url":predata["file_url"]
             }
 
-    setdata(imgid,data)
+    setData(imgid,data)
     if(len(failed) == 0): return False
     return failed
     # printtime(timecounter,f"handled tags for {imgid} in: ")
@@ -415,148 +295,15 @@ def handleTagRequests(fixing=False):
         t2.start()
         InitThreads.append(t2)
 
-def handleImg(image,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag):
-    selectimgs = []
-    # timecounter = time.time_ns()
-    imgdata = getdata(image[:image.find(".")])
-    # printtime(timecounter,"loaded imgdata in ")
-    # timecounter = time.time_ns()
-    if("exclude" not in imgdata["flag"]):
-        if((not rating) or str(rating) in imgdata["rating"]):
-            if((not exrating) or str(rating) not in imgdata["rating"]):
-                if((not flag) or str(flag) in imgdata["flag"]):
-                    if(imgdata["width"] >= minwidth and imgdata["height"] >= minheight):
-                        if(not wide or imgdata["width"] >= imgdata["height"]):
-                            if(not narrow or imgdata["width"] <= imgdata["height"]):
-                                exok = True
-                                tagok = True
-                                # printtime(timecounter, "handled pre exclusions in ")
-                                timecounter = time.time_ns()
-                                alltags = imgdata["tags"] + imgdata["character"] + imgdata["copyright"] + imgdata["artist"] + imgdata["meta"]
-                                # printtime(timecounter, "joined tag lists in ")
-                                for tag in extags:
-                                    if (tag in  alltags):
-                                        exok = False
-                                        break
-                                for tag in tags:
-                                    if (tag not in alltags):
-                                        tagok = False
-                                        break
-                                if(exok and tagok):
-                                    # printtime(timecounter, "added image to list in ")
-                                    return True
-                                    # print("found",image)
-                                    # printtime(timecounter, "actually added image to list in ")
-    return False
-# printtime(timecounter,"completed image check in ")
 
 selectimgs = []
 
-def filterThreadHandler(images,latest,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag):
-    global selectimgs
-    timecounter = time.time_ns()
-    for image in images:
-        if(not latest in image):
-            if(handleImg(image,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag)):
-                selectimgs.append(image)
-    printtime(timecounter, "thread took ")
 
 def filterImgs(args):
-    # timecounter4 = time.time_ns()
-    # printtime(timecounter4, "initialization took ")
-    # timecounter4 = time.time_ns()
-    selection = False
-    rating = False
-    exrating = False
-    tags = []
-    extags = []
-    minheight = 0
-    minwidth = 0
-    wide = False
-    narrow = False
-    flag = False
-    # printtime(timecounter4, "initialization took ")
-    # printtime(timecounter4, "initialization took ")
-    for arg in args:
-        if("this:" in arg): selection = arg[arg.find(":")+1:]
-        elif("-rating:" in arg): exrating = arg[arg.find(":")+1:]
-        elif("rating:" in arg): rating = arg[arg.find(":")+1:]
-        elif("flag:" in arg): flag = arg[arg.find(":")+1:]
-        elif("--wide" in arg): wide = True
-        elif("--narrow" in arg): narrow = True
-        elif("--square" in arg):
-            wide = True
-            narrow = True
-        elif("height:" in arg):
-            match arg[arg.find(":")+1:]:
-                case "1k":
-                    minheight = 960
-                case "2k":
-                    minheight = 1920
-                case "4k":
-                    minheight = 3840
-                case _:
-                    minheight = int(arg[arg.find(":")+1:])
-        elif("width:" in arg):
-            match arg[arg.find(":")+1:]:
-                case "1k":
-                    minwidth = 960
-                case "2k":
-                    minwidth = 1920
-                case "4k":
-                    minwidth = 3840
-                case _:
-                    minwidth = int(arg[arg.find(":")+1:])
-        elif('-' == arg[0]):
-            extags.append(arg[1:])
-        else:
-            tags.append(arg)
-    # printtime(timecounter4,"prehandling done in ")
-    images = [f for f in os.listdir(Wallpaper_Folder)]
-    global selectimgs
-    latest = latestImg()
-    selectimgs = []
-    # print(latest)
-    # print(images[0])
-    # printtime(timecounter4,"prehandling and loading imgs done in ")
-    if(selection):
-        for image in images: #TODO this is horrible, fix it (checking all images just to find file extension)
-            if(selection == image[:image.find(".")]):
-                selectimgs.append(image)
-    else:
-        timecounter = time.time_ns()
-        # print("starting partitioning of image array...")
-        parts = 1
-        partlen = int(len(images)/parts)
-        fthreads = []
-        for i in range(parts-1):
-            partimages = images[i*partlen:(i+1)*partlen]
-            t = Thread(target=filterThreadHandler, args=(partimages,latest,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag))
-            t.start()
-            fthreads.append(t)
-            # t.join()
-        # print("starting thread 15")
-        partimages = images[(parts-1)*partlen:]
-        t = Thread(target=filterThreadHandler, args=(partimages,latest,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag))
-        t.start()
-        fthreads.append(t)
-        t.join()
-        printtime(timecounter, "initializing threads took ")
-        # print("started thread 15")
-        for t in fthreads:
-            print("joining thread",t)
-            t.join()
-        print("done filtering")
-        # for image in images:
-        #     filterThreadHandler(latest,image,rating,exrating,tags,extags,minheight,minwidth,wide,narrow,flag)
+    parsedArgs = filters.parseLocalArgs(args)
+    images = filters.filterLocalImages(parsedArgs, Wallpaper_Folder, latestImg)
+    return images
 
-
-    # printtime(timecounter4,"filtering done in ")
-    print(len(selectimgs))
-    return selectimgs
-
-
-import shutil
 def copyout(image,folder = ""):
     shutil.copyfile(Wallpaper_Folder+image, COPY_OUT_PATH+folder+image)
 
@@ -662,7 +409,7 @@ def printallflags():
     # print("getting all flags...")
     for image in images:
         imid = image[:image.find(".")]
-        imdata = getdata(imid)
+        imdata = getData(imid)
         flag = imdata["flag"]
         if(flag in flags):
             flags[flag] += 1
@@ -824,7 +571,7 @@ def main():
 
         case "getags":
             img = latestImg()
-            data = getdata(img)
+            data = getData(img)
             print(img)
             for thing in data:
                 print(f"{thing}: {data[thing]}")
@@ -839,7 +586,7 @@ def main():
             setflag(latestImg(),flag)
 
         case "get":
-            get(args[2:])
+            get(args[2:],ctx=ctx)
 
         case "exist":
             randomExist(args[2:])

@@ -9,7 +9,7 @@ import os
 class SearchCache:
 
     def __init__(self, cacheFile:str, ctx:AppContext):
-        self.cacheFile = cacheFile
+        self.cacheFile = os.path.join(ctx.env.get("WALLPAPER_CACHE"), cacheFile)
         self.ctx = ctx
 
 
