@@ -2,9 +2,9 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,python,kate,dotenv
 
 # Script Files
-.json
-.txt
-
+*.json
+*.txt
+/tags
 ### dotenv ###
 .env
 

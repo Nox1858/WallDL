@@ -1,100 +1,140 @@
 import requests
 import time
+from random import randrange
+from dataclasses import dataclass, field
 
-API_KEY = "your stuff here"
-USER_ID = "your stuff here"
+from AppContext import AppContext
 
-cookies={
-    "your stuff here too"
-}
+@dataclass
+class GelbooruRequestOptions:
+    timeout_seconds: float = 10.0
+    max_retries: int = 5
+    backoff_min_ms: int = 200
+    backoff_max_ms: int = 1000
+    cookies: dict[str, str] | None = None
+    user_agent: str = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36"
+    )
 
+@dataclass
+class PostQuery:
+    tags: list[str] = field(default_factory=list)
+    random: bool = True
+    limit: int = 0
 
-def Grequest(page, extra, limit = 0):
-    #page = tag/post
-    link = f"https://gelbooru.com/index.php?page=dapi&s={page}&q=index&json=1&api_key={API_KEY}&user_id={USER_ID}&limit={limit}&{extra}"
-    global cookies
-    timeout = 0
-    while(timeout < 5):
-        # if(timeout > 0.5): print("sleeping",timeout,"on",link)
-        time.sleep(timeout)
-        # timecounter2 = time.time_ns()
-        r = requests.get(link,cookies=cookies)
-        # rawReqTimes.append(printtime(timecounter2,"request completed in ",out=False))
-        # printtime(timecounter2,"raw request time:")
-        if(r.status_code == 200): timeout = 10
-        timeout += randrange(200,1000)/20000
-    if(timeout == 10): return r.json()
-    print("failed to complete request")
-    return False
+@dataclass
+class DownloadedImage:
+    post_id: int
+    file_url: str
+    extension: str
+    content: bytes
 
+class GelbooruError(Exception):
+    pass
 
-def tagrequest(tags):
-    streq = ""
-    for tag in tags:
-        streq += tag+" "
-    tags = streq.replace("&#039;","'").replace("+","%2b").replace("&gt;",">").replace("&lt;","<").replace("&amp;","%26").replace("&quot;",'"').replace("#","%23").replace("/","%2f")
-    link = "names="+tags
+class GelbooruRequestError(GelbooruError):
+    pass
 
-    r = Grequest("tag",link)
-    if(r):
-        try:
-            return r["tag"]
-        except:
-            print("didn't find tags")
-    return False
-
-def apirequest(tags,random=True,limit=0):
-    link = "tags="
-    for tag in tags:
-        link += str(tag)+"+"
-    if(random): link += "sort:random"
-
-    r = Grequest("post",link,limit)
-    if(r):
-        try:
-            return r["post"]
-        except:
-            print("failed to find any posts matching filters")
-    return False
+class GelbooruResponseError(GelbooruError):
+    pass
 
 
-def saveImg(link,imgid,ext):
-    timecounter = time.time_ns()
-    timeout = 0
+class GelbooruClient:
+    BASE_URL = "https://gelbooru.com/index.php"
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0 Safari/537.36",
-        # "Accept": "image/avif,image/webp,image/apng,image/,/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": link,
-        "Connection": "keep-alive",
-    }
-    while(timeout < 2):
-        # if(timeout > 0.5): print("sleeping",timeout,"on",link)
-        time.sleep(timeout)
-        # timecounter2 = time.time_ns()
-        # print("trying to get",link)
-        r = requests.get(link,headers=headers)
-        # print(r.content)
-        # rawDLTimes.append(printtime(timecounter2,f"downloaded {imgid}{ext} in ",out=False))
-        if(r.status_code == 200): timeout = 10
-        timeout += randrange(200,1000)/20000
-    imgdata = r.content
-    size = len(imgdata)/1000
-    # totalDLSize.append(size)
-    if(size > 1000):
-        size = str(size/1000)[:6]+"mb"
-    else:
-        size = str(size)[:6]+"kb"
-    # totalDLTime.append(printtime(timecounter,f"downloaded {imgid}{ext} of {size} in: "))
-    # timecounter = time.time_ns()
-    if("webm" in ext or "mp4" in ext):
-        print("You'll probably not want to convert to gifs right now, so we'll skip this...")
-        with open(Wallpaper_Folder+str(imgid)+ext, 'wb') as f: f.write(imgdata)
+    def __init__(self, ctx: AppContext, options: GelbooruRequestOptions | None = None):
+        self.ctx = ctx
+        self.options = options or GelbooruRequestOptions()
+        self.session = requests.Session()
+        self.session.headers.update({
+            "User-Agent": self.options.user_agent,
+            "Accept-Language": "en-US,en;q=0.9",
+            "Connection": "keep-alive",
+        })
 
-        # with open("videotmp/"+str(imgid)+ext, 'wb') as f: f.write(imgdata)
-        # clip = VideoFileClip("videotmp/"+str(imgid)+ext)
-        # clip.write_gif("videotmp/"+str(imgid)+".gif")
-    else:
-        with open(Wallpaper_Folder+str(imgid)+ext, 'wb') as f: f.write(imgdata)
-    # totalSaveTime.append(printtime(timecounter,f"saved {imgid} of {size} in: ",out=False))
+        if self.options.cookies:
+            self.session.cookies.update(self.options.cookies)
+
+    def _auth_params(self) -> dict[str, str]:
+        return {
+            "json": "1",
+            "api_key": self.ctx.api_key,
+            "user_id": self.ctx.user_id
+        }
+
+    def _request_json(self, params: dict[str, Any]) -> dict[str, Any]:
+        last_error = None
+
+        for attempt in range(self.options.max_retries):
+            try:
+                response = self.session.get(
+                    self.BASE_URL,
+                    params=params,
+                    timeout=self.options.timeout_seconds,
+                )
+                response.raise_for_status()
+                return response.json()
+            except (requests.RequestException, ValueError) as exc:
+                last_error = exc
+                if attempt < self.options.max_retries - 1:
+                    delay = random.randint(
+                        self.options.backoff_min_ms,
+                        self.options.backoff_max_ms,
+                    ) / 1000
+                    time.sleep(delay)
+
+        raise GelbooruRequestError(f"Gelbooru request failed: {last_error}")
+
+    def getPosts(self, query: PostQuery) -> list[dict[str, Any]]:
+        tag_string = " ".join(query.tags)
+        if query.random:
+            tag_string = f"{tag_string} sort:random".strip()
+
+        params = {
+            "page": "dapi",
+            "s": "post",
+            "q": "index",
+            "limit": query.limit,
+            "tags": tag_string,
+            **self._auth_params(),
+        }
+
+        payload = self._request_json(params)
+        return payload.get("post", [])
+
+    def getTags(self, tags: list[str]) -> list[dict[str, Any]]:
+        params = {
+            "page": "dapi",
+            "s": "tag",
+            "q": "index",
+            "limit": 0,
+            "names": " ".join(tags),
+            **self._auth_params(),
+        }
+
+        payload = self._request_json(params)
+        return payload.get("tag", [])
+
+    def downloadImageBytes(self, url: str, max_retries: int = 2) -> bytes:
+        last_error = None
+
+        for attempt in range(max_retries):
+            try:
+                response = self.session.get(
+                    url,
+                    timeout=self.options.timeout_seconds,
+                    headers={"Referer": url},
+                )
+                response.raise_for_status()
+                return response.content
+            except requests.RequestException as exc:
+                last_error = exc
+                if attempt < max_retries - 1:
+                    delay = random.randint(
+                        self.options.backoff_min_ms,
+                        self.options.backoff_max_ms,
+                    ) / 1000
+                    time.sleep(delay)
+
+        raise GelbooruRequestError(f"Image download failed: {last_error}")

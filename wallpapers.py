@@ -34,8 +34,7 @@ env = Environment(".env")
 API_KEY = env.get("API_KEY")
 USER_ID = env.get("USER_ID")
 
-ctx = AppContext
-ctx.env = env
+ctx = AppContext(env=env)
 cache = SearchCache("searchcache.json", ctx)
 
 Wallpaper_Folder = env.get("WALLPAPER_IMAGES")
@@ -279,11 +278,11 @@ def handleTagRequests(fixing=False):
             fullRequests.pop(value)
             reqs.append(value)
         if(len(fullRequests) > 0):
-            t1 = Thread(target=handleTagWebRequest, args=[reqs])
+            t1 = Thread(target=handleTagWebRequest, args=[reqs, ctx])
             t1.start()
             ReqThreads.append(t1)
         else:
-            handleTagWebRequest(reqs)
+            handleTagWebRequest(reqs, ctx)
     # print("started threads, waiting on finish")
     # time.sleep(3)
     for t in ReqThreads:
@@ -357,7 +356,7 @@ def fixImgTags(imgid):
     imgid = post["id"]
     failed = initdata(imgid,post)
     while(failed):
-        handleTagWebRequest(failed)
+        handleTagWebRequest(failed, ctx)
         failed = initdata(imgid,post)
 
     printtime(timecounter,f"redownloaded tags for {imgid} in ")
@@ -586,7 +585,7 @@ def main():
             setflag(latestImg(),flag)
 
         case "get":
-            get(args[2:],ctx=ctx)
+            get(args[2:],ctx)
 
         case "exist":
             randomExist(args[2:])
