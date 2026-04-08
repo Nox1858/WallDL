@@ -5,6 +5,7 @@
 *.json
 *.txt
 /tags
+downloaded.txt
 ### dotenv ###
 .env
 
