@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from webreq_helpers import PostQuery
+from webreq_helpers import PostQuery, GelbooruClient
+from filehandler import ImageStorage
 
 @dataclass
 class DownloadStats:

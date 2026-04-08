@@ -166,18 +166,18 @@ def setWallpaper(image):
     with open(f"{DESKTOP_PATH}/wallpaperURL.desktop","w") as f: f.write(f"[Desktop Entry]\nIcon=/{WALL_HOME_PATH}/gelbooru-logo.svg\nName=wallpaperURL\nType=Link\nURL[$e]=https://gelbooru.com/index.php?page=post&s=view&id={imgid}")
     with open ("latest.txt","w") as f: f.write(imgid)
     with open ("history.txt","a") as f: f.write(f"{imgid}; {d.now()}\n")
-    imgdata = getData(imgid)
+    imgdata = getData(imgid, ctx.cache_dir)
     try:
         imgdata["occurances"] += 1
     except:
         imgdata["occurances"] = 1
-    setData(imgid, imgdata)
+    setData(imgid, imgdata, ctx.cache_dir)
 
 
 def setflag(imgid,flag):
     data = getData(imgid)
     data["flag"] = flag
-    setData(imgid,data)
+    setData(imgid,data, ctx.cache_dir)
 
 
 def initdata(imgid,predata,fix=False):
@@ -241,7 +241,7 @@ def initdata(imgid,predata,fix=False):
             "url":predata["file_url"]
             }
 
-    setData(imgid,data)
+    setData(imgid,data, ctx.cache_dir)
     if(len(failed) == 0): return False
     return failed
     # printtime(timecounter,f"handled tags for {imgid} in: ")
@@ -300,7 +300,7 @@ selectimgs = []
 
 def filterImgs(args):
     parsedArgs = filters.parseLocalArgs(args)
-    images = filters.filterLocalImages(parsedArgs, Wallpaper_Folder, latestImg)
+    images = filters.filterLocalImages(parsedArgs, Wallpaper_Folder, latestImg, ctx)
     return images
 
 def copyout(image,folder = ""):
@@ -309,21 +309,21 @@ def copyout(image,folder = ""):
 def randomExist(args = [],copy=False,copydest="",name=False):
     timecounter = time.time_ns()
     if(name):
-        selectimgs = getcache(querry = [], name = name)
+        selectimgs = cache.get(querry = [], name = name)
         if(not selectimgs):
             selectimgs = filterImgs(args)
-            addtocache(args,selectimgs,name = name)
+            cache.add(args,selectimgs,name = name)
     else:
         if(len(args) == 0):
-            selectimgs = getcache(querry = [], name = "any")
+            selectimgs = cache.get(querry = [], name = "any")
             if(not selectimgs):
                 selectimgs = [f for f in os.listdir(Wallpaper_Folder)]
-                addtocache(args,selectimgs,"any")
+                cache.add(args,selectimgs,"any")
         else:
-            selectimgs = getcache(querry = args)
+            selectimgs = cache.get(querry = args)
             if(not selectimgs):
                 selectimgs = filterImgs(args)
-                addtocache(args,selectimgs)
+                cache.add(args,selectimgs)
             # selectimgs = [f for f in os.listdir(Wallpaper_Folder)]
             print("found",len(selectimgs),"images with given tags")
 
@@ -408,7 +408,7 @@ def printallflags():
     # print("getting all flags...")
     for image in images:
         imid = image[:image.find(".")]
-        imdata = getData(imid)
+        imdata = getData(imid, ctx.cache_dir)
         flag = imdata["flag"]
         if(flag in flags):
             flags[flag] += 1
@@ -479,7 +479,7 @@ def update_faves(getnum = 99):
     if(updates > 0):
         print("updated",updates,"faves, refreshing cache now...")
         with open("faves.json", "w") as f: json.dump(data,f)
-        refresh_cache()
+        cache.refresh(filterFunc=filterImgs)
     else:
         print("no new images found :(")
 
@@ -538,7 +538,7 @@ def main():
             quickrandexist()
 
         case "recache":
-            refresh_cache()
+            cache.refresh(filterFunc=filterImgs)
 
         case "addfave":
             add_fave(args[2],args[3:])

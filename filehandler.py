@@ -9,16 +9,16 @@ def getAllImages(imagePath: str) -> list[str]:
     return [f for f in os.listdir(imagePath)]
 
 @lru_cache(maxsize=None)
-def getData(imgid: str) -> dict:
+def getData(imgid: str, cacheFolder: Path = Path(".")) -> dict:
     try:
-        with open(f"tags/{imgid}.json","r") as f: return json.load(f)
+        with open(cacheFolder / f"tags/{imgid}.json","r") as f: return json.load(f)
     except Exception as e:
         print("failed to load tags of",imgid,"exception:",e)
-        with open(f"tags/default.json","r") as f: return json.load(f)
+        with open(cacheFolder / f"tags/default.json","r") as f: return json.load(f)
 
-def setData(imgid: int ,data: dict):
+def setData(imgid: int ,data: dict, cacheFolder: Path = Path(".")):
     # timecounter = time.time_ns()
-    with open(f"tags/{imgid}.json","w") as f:
+    with open(cacheFolder / "tags/{imgid}.json","w") as f:
         json.dump(data,f)
         # print("imgtags write overhead:",(time.time_ns()-timecounter)/1000000,"ms")
     getData.cache_clear()

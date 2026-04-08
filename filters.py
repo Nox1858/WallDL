@@ -6,6 +6,7 @@ from math import ceil
 from timer import printtime, notify
 from filehandler import getAllImages, getData
 import time
+from AppContext import AppContext
 
 @dataclass
 class LocalFilterArgs:
@@ -80,7 +81,7 @@ def splitList(l :list[str], n: int) -> list[list[str]]:
     n = max(1, n)
     return [l[i:i + n] for i in range(0, len(l), n)]
 
-def filterLocalImages(parsedArgs: LocalFilterArgs, imagePath: str, latest: str) -> list[str]:
+def filterLocalImages(parsedArgs: LocalFilterArgs, imagePath: str, latest: str, ctx: AppContext) -> list[str]:
     images = getAllImages(imagePath)
     if parsedArgs.selection is not None:
         selection_image = next(
@@ -100,7 +101,7 @@ def filterLocalImages(parsedArgs: LocalFilterArgs, imagePath: str, latest: str) 
     filtered_images: list[str] = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=thread_count) as executor:
         futures = [
-            executor.submit(filterThreadHandler, chunk, parsedArgs, latest)
+            executor.submit(filterThreadHandler, chunk, parsedArgs, latest, ctx)
             for chunk in part_imgs
         ]
 
@@ -109,7 +110,7 @@ def filterLocalImages(parsedArgs: LocalFilterArgs, imagePath: str, latest: str) 
 
     return filtered_images
 
-def filterThreadHandler(images: list[str], args: LocalFilterArgs, latest: str) -> list[str]:
+def filterThreadHandler(images: list[str], args: LocalFilterArgs, latest: str, ctx: AppContext) -> list[str]:
     selection = []
     t = time.time_ns()
     for image in images:
@@ -118,15 +119,15 @@ def filterThreadHandler(images: list[str], args: LocalFilterArgs, latest: str) -
         if latest is not None and image_id == latest:
             continue
 
-        if handleImg(image, args):
+        if handleImg(image, args, ctx):
             selection.append(image)
     printtime(t, message="Thread Time: ", out=True)
     return selection
 
-def handleImg(image: str, args: LocalFilterArgs) -> bool:
+def handleImg(image: str, args: LocalFilterArgs, ctx: AppContext) -> bool:
 
     img_id = image.rsplit(".", 1)[0]
-    imgdata = getData(img_id)
+    imgdata = getData(img_id, ctx.cache_dir)
     ##print(imgdata)
 
     try:

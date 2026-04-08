@@ -63,7 +63,7 @@ class GelbooruClient:
             "user_id": self.ctx.user_id
         }
 
-    def _request_json(self, params: dict[str, Any]) -> dict[str, Any]:
+    def _request_json(self, params: dict[str, any]) -> dict[str, any]:
         last_error = None
 
         for attempt in range(self.options.max_retries):
@@ -86,7 +86,7 @@ class GelbooruClient:
 
         raise GelbooruRequestError(f"Gelbooru request failed: {last_error}")
 
-    def getPosts(self, query: PostQuery) -> list[dict[str, Any]]:
+    def getPosts(self, query: PostQuery) -> list[dict[str, any]]:
         tag_string = " ".join(query.tags)
         if query.random:
             tag_string = f"{tag_string} sort:random".strip()
@@ -103,7 +103,7 @@ class GelbooruClient:
         payload = self._request_json(params)
         return payload.get("post", [])
 
-    def getTags(self, tags: list[str]) -> list[dict[str, Any]]:
+    def getTags(self, tags: list[str]) -> list[dict[str, any]]:
         params = {
             "page": "dapi",
             "s": "tag",
