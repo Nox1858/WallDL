@@ -71,9 +71,9 @@ def setWallpaper(image: str, ctx: AppContext) -> None:
     with open("history.txt", "a") as f:
         f.write(f"{img_id}; {datetime.now()}\n")
 
-    imgdata = getData(img_id)
+    imgdata = getData(img_id, ctx.cache_dir)
     imgdata["occurances"] = imgdata.get("occurances", 0) + 1
-    setData(img_id, imgdata)
+    setData(img_id, imgdata, ctx.cache_dir)
 
 
 def get(args: list[str], ctx: AppContext, quiet: bool = False, setwall: bool = True, maxTries:int = 5) ->int :
