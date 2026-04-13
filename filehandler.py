@@ -13,7 +13,7 @@ def getData(imgid: str, cacheFolder: Path = Path(".")) -> dict:
     try:
         with open(cacheFolder / f"tags/{imgid}.json","r") as f: return json.load(f)
     except Exception as e:
-        print("failed to load tags of",imgid,"exception:",e)
+        #print("failed to load tags of",imgid,"exception:",e)
         with open(cacheFolder / f"tags/default.json","r") as f: return json.load(f)
 
 def setData(imgid: int ,data: dict, cacheFolder: Path = Path(".")):

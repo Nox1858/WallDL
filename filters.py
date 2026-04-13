@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 import concurrent.futures
+from concurrent.futures.process import BrokenProcessPool
 import json
 import os
 from math import ceil
@@ -83,6 +84,7 @@ def splitList(l :list[str], n: int) -> list[list[str]]:
 
 def filterLocalImages(parsedArgs: LocalFilterArgs, imagePath: str, latest: str, ctx: AppContext) -> list[str]:
     images = getAllImages(imagePath)
+    print(f"got images: {len(images)}")
     if parsedArgs.selection is not None:
         selection_image = next(
             (image for image in images if image.rsplit(".", 1)[0] == parsedArgs.selection),
@@ -94,25 +96,39 @@ def filterLocalImages(parsedArgs: LocalFilterArgs, imagePath: str, latest: str, 
         return []
 
 
-    thread_count = max(min(16, len(images)),1)
+    thread_count = max(min(5, len(images)),1)
     chunk_size = ceil(len(images) / thread_count)
     part_imgs = splitList(images, chunk_size)
 
     filtered_images: list[str] = []
-    with concurrent.futures.ProcessPoolExecutor(max_workers=thread_count) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=thread_count) as executor:
         futures = [
             executor.submit(filterThreadHandler, chunk, parsedArgs, latest, ctx)
             for chunk in part_imgs
         ]
 
-        for future in concurrent.futures.as_completed(futures):
-            filtered_images.extend(future.result())
+        print(f"Number of Futures: {len(futures)}")
+
+        for i,future in enumerate(concurrent.futures.as_completed(futures)):
+            print(f"collecting future {i}")
+            try:
+                result = future.result(timeout=10)
+                print(f"future {future} returned {len(result)} items")
+                filtered_images.extend(result)
+            except BrokenProcessPool as e:
+                print(f"future {i} broke the pool: {e!r}", flush=True)
+                raise
+            except Exception as e:
+                print(f"future {future} raised: {type(e).__name__}: {e}")
+
+    print(f"total filtered: {len(filtered_images)}")
 
     return filtered_images
 
 def filterThreadHandler(images: list[str], args: LocalFilterArgs, latest: str, ctx: AppContext) -> list[str]:
     selection = []
     t = time.time_ns()
+    print("Started Thread Handler")
     for image in images:
         image_id = image.rsplit(".", 1)[0]
 
@@ -120,23 +136,26 @@ def filterThreadHandler(images: list[str], args: LocalFilterArgs, latest: str, c
             continue
 
         if handleImg(image, args, ctx):
+            #print(f"selected: {image}")
             selection.append(image)
-    printtime(t, message="Thread Time: ", out=True)
+    #printtime(t, message="Thread Time: ", out=True)
+    print(f"worker done: input={len(images)} selected={len(selection)}")
     return selection
 
 def handleImg(image: str, args: LocalFilterArgs, ctx: AppContext) -> bool:
 
     img_id = image.rsplit(".", 1)[0]
     imgdata = getData(img_id, ctx.cache_dir)
-    ##print(imgdata)
+    #print(imgdata)
 
     try:
         if "exclude" in imgdata['flag']:
             return False
     except Exception as e:
-        print(image)
-        print(imgdata)
-        exit()
+        print(e)
+        #print(image)
+        #print(imgdata)
+        #exit()
 
     if args.rating and args.rating not in imgdata["rating"]:
         return False

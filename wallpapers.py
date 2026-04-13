@@ -17,6 +17,8 @@ from datetime import timedelta
 
 from threading import Thread
 
+from concurrent.futures.process import BrokenProcessPool
+
 #Custom Stuff
 from dl_library import *
 
@@ -175,7 +177,7 @@ def setWallpaper(image):
 
 
 def setflag(imgid,flag):
-    data = getData(imgid)
+    data = getData(imgid, ctx.cache_dir)
     data["flag"] = flag
     setData(imgid,data, ctx.cache_dir)
 
@@ -300,7 +302,15 @@ selectimgs = []
 
 def filterImgs(args):
     parsedArgs = filters.parseLocalArgs(args)
-    images = filters.filterLocalImages(parsedArgs, Wallpaper_Folder, latestImg, ctx)
+    print("parsed args")
+    try:
+        images = filters.filterLocalImages(parsedArgs, Wallpaper_Folder, latestImg, ctx)
+        print(f"filtered images {len(images)}")
+    except BaseException as e:
+        print("test")
+        print(e)
+    except BrokenProcessPool as e:
+        print(e)
     return images
 
 def copyout(image,folder = ""):
@@ -320,10 +330,18 @@ def randomExist(args = [],copy=False,copydest="",name=False):
                 selectimgs = [f for f in os.listdir(Wallpaper_Folder)]
                 cache.add(args,selectimgs,"any")
         else:
+            print("Getting Cache Querry")
             selectimgs = cache.get(querry = args)
             if(not selectimgs):
-                selectimgs = filterImgs(args)
-                cache.add(args,selectimgs)
+                print("Not in Cache")
+                try:
+                    selectimgs = filterImgs(args)
+                    print(f"Imgs selected {len(selectimgs)}")
+                    cache.add(args,selectimgs)
+                    print("added to cache?")
+                except Exception as e:
+                    print(e)
+
             # selectimgs = [f for f in os.listdir(Wallpaper_Folder)]
             print("found",len(selectimgs),"images with given tags")
 

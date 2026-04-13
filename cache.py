@@ -2,8 +2,10 @@ import json
 from datetime import datetime as d
 from datetime import timedelta
 from typing import Callable
+
 from AppContext import AppContext
 import os
+from timer import notify,printtime
 
 
 class SearchCache:
@@ -94,7 +96,7 @@ class SearchCache:
                     if(not quiet): print("previously used this search",used,"times")
                     date = d.strptime(data[entry]["date"], "%Y-%m-%d %H:%M:%S.%f")
                     if(d.now()-date > timedelta(days = 3) and used > 3):
-                        notify("this cache is >3d old, maybe update it? cached on",date)
+                        notify(f"this cache is >3d old, maybe update it? cached on{date}")
                     with open(self.cacheFile, "w") as f: json.dump(data,f)
                     return data[entry]["results"]
         if(not quiet): print("search not cached")
