@@ -50,53 +50,52 @@ COPY_OUT_PATH = env.get("COPY_OUTPUT_DESTINATION")
 
 HELPSTRING = """Fun Utility for downloading Wallpapers from a questionable Source :)
 Possible args:
-get [args] gets an image using args as Geltags, with the following special stuff:
---limit:NUM gets NUM images instead of just one (Gel can return less than this number if there are duplicates or less results)
---max_tries:NUM changes number of maxtries, usually not necessary, only really usefull if you look for random images and most but not all are already downloaded
---safe short for "rating:general"
---sort returns images in descending order of ID (newest image first) instead of randomly ordered
+"get [args]" gets an image using args as Geltags, with the following special stuff:
+    "--limit:NUM" gets NUM images instead of just one (Gel can return less than this number if there are duplicates or less results)
+    "--max_tries:NUM" changes number of maxtries, usually not necessary, only really usefull if you look for random images and most but not all are already downloaded
+    "--safe" short for "rating:general"
+    "--sort" returns images in descending order of ID (newest image first) instead of randomly ordered
 
-exist [args] looks through local images using args as Geltags with the following special stuff:
-this:IMAGE_ID sets this image
-flag:FLAG looks for all images with this flag
---wide images where width > height (incl square)
---narrow images where width --square images where width = height
-height:NUM images with this minimum height (accepts 1k,2k,4k as shorts for the corresponding pixelsizes)
-width:NUM same as height but for width
--ARG excludes the tag instead (as on Gel, also works with ratings)
+"exist [args]" looks through local images using args as Geltags with the following special stuff:
+    "this:IMAGE_ID" sets this image
+    "flag:FLAG" looks for all images with this flag
+    "--wide" images where width > height (incl square)
+    "--narrow" images where width --square images where width = height
+    "height:NUM" images with this minimum height (accepts 1k,2k,4k as shorts for the corresponding pixelsizes)
+    "width:NUM" same as height but for width
+    "-ARG" excludes the tag instead (as on Gel, also works with ratings)
 
-copy [ARGS] copies the current wallpaper to copyout. If args are given copies ALL images with these to copyout. Change output directory with "folder:DEST"
+"copy [ARGS]" copies the current wallpaper to copyout. If args are given copies ALL images with these to copyout. Change output directory with "folder:DEST"
 
-flag FLAG sets the flag of the current image to FLAG
+"flag FLAG" sets the flag of the current image to FLAG
 
-fixtags currently broken (-_-)
+"fixtags" now fixed (=^-^=)
 
-getags prints tags of the current image
+"getags"prints tags of the current image
 
-recache refreshes all searches in cache that have been used a bit (deletes the rest)
+"recache" refreshes all searches in cache that have been used a bit (deletes the rest)
 
-prev [num] sets the previous image, or goes the specifed number of images back. Careful: [num] is WIP and since we just add the latest image to the queue, it will get flooded and you will get the same image if you repeateldy do it.
+"prev [num]" sets the previous image, or goes the specifed number of images back. Careful: [num] is WIP and since we just add the latest image to the queue, it will get flooded and you will get the same image if you repeateldy do it.
 
-prevsearch triggers the last used search with exist or direct name search again (very cool, I love this one)
+"prevsearch" triggers the last used search with exist or direct name search again (very cool, I love this one)
 
-addfave NAME [TAGS] adds an entry in the fave list with the given name and tags, so that you can subsequently use udpate_faves to get the newest images of your favorite searches
+"addfave NAME [TAGS]" adds an entry in the fave list with the given name and tags, so that you can subsequently use udpate_faves to get the newest images of your favorite searches
 
-update_faves [NUM] gets the newest NUM images (default is 99) of all your faves
+"update_faves [NUM]" gets the newest NUM images (default is 99) of all your faves
 
-reset sets the image "default.png" as wallpaper (will fail if it doesn't exist obviously)
+"reset" sets the image "default.png" as wallpaper (will fail if it doesn't exist obviously)
 
+"printflags" looks through all images and prints all flags that you set (just to remind you if you forgot how you called something)
 
-printflags looks through all images and prints all flags that you set (just to remind you if you forgot how you called something)
+"refresh" should set the current wallpaper to latest if your wallpaper manager messed up, but the wallpaper manager messes up and it currently doesn't do anything
 
-refresh should set the current wallpaper to latest if your wallpaper manager messed up, but you wallpaper manager messes up and it currently doesn't work
+"qer" QuickRandomExist (no typo here) is a way quicker version of "exist" over all images
 
-qer QuickRandomExist (no typo here) is a way quicker version of "exist" over all images
+"compare" WIP should print stats and allow comparing tags and stuff but I lost the implementation file :(
 
-compare WIP should print stats and allow comparing tags and stuff but I lost the implementation file :(
+"taginfo" WIP
 
-taginfo WIP
-
-help prints this thing here
+"help" prints this thing here
 
 If you pass an argument that is not in this list it'll cache a new search using the first argument as the name and the remaining ones as tags and subsequently you can access this search by just using the name (so just "./wallpapers.py NAME")
 
@@ -501,20 +500,29 @@ def update_faves(getnum = 99):
     else:
         print("no new images found :(")
 
-def printstats(querry):
-    total = 0
-    safe = 0
-    questionable = 0
-    sensitive = 0
-    explicit = 0
-    print(querry)
-    print(f"total results: {total}")
-    print(f"distribution: ")
-
 def getcount(tags):
-    selectimgs = getcache(querry = tags, quiet = True)
+    # print(tags)
+    selectimgs = cache.get(querry = tags)
     if(not selectimgs): selectimgs = filterImgs(tags)
     return len(selectimgs)
+
+def printstats(querry):
+    total = getcount(querry)
+    querry.append("rating:general")
+    safe = getcount(querry)
+    querry.remove("rating:general")
+    querry.append("rating:questionable")
+    questionable = getcount(querry)
+    querry.remove("rating:questionable")
+    querry.append("rating:sensitive")
+    sensitive = getcount(querry)
+    querry.remove("rating:sensitive")
+    querry.append("rating:explicit")
+    explicit = getcount(querry)
+    querry.remove("rating:explicit")
+    print(querry)
+    print(f"total results: {total}")
+    print(f"distribution:{safe}/{questionable}/{sensitive}/{explicit} ")
 
 def taginfo(tag):
     with open(f"tagdata.json", "r") as f: fullTagData = json.load(f)
@@ -547,7 +555,8 @@ def main():
                 taginfo(arg)
         case "compare":
             for thing in args[2:]:
-                printstats(thing)
+                querry = thing.split(" ")
+                printstats(querry)
         case "prevsearch":
             with open("prevsearch.txt","r") as f: name = f.read()
             print(name)
