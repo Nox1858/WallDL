@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 import json
 
-from webreq_helpers import GelbooruClient
+from webreq_helpers import GelbooruClient, PostQuery
 from filehandler import setData
 
 
@@ -128,3 +128,16 @@ class TagService:
             metadata = self.buildImageMetadata(post)
             setData(img_id, metadata, self.client.ctx.cache_dir)
             print(f"{img_id} : {metadata}")
+
+    def refreshImageMetadata(self, imageID: int) -> bool:
+        posts = self.client.getPosts(PostQuery(tags=[f"id:{imageID}"], random=False, limit=1))
+
+        if not posts:
+            print(f"failed to refetch post {imageID}")
+            return False
+
+        post = posts[0]
+        metadata = self.buildImageMetadata(post)
+        setData(int(post["id"]), metadata, self.client.ctx.cache_dir)
+        return True
+

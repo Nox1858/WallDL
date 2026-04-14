@@ -30,6 +30,8 @@ from filehandler import getData, getAllImages, setData, checkExisting
 
 from cache import SearchCache
 from AppContext import AppContext
+from webreq_helpers import GelbooruClient
+from TagService import TagService
 
 env = Environment(".env")
 
@@ -376,12 +378,25 @@ def fixALLImgTags(maxnum=10):
     for image in images:
         imgid = image[:image.find(".")]
         try:
-            f = open(f"tags/{imgid}.json","r")
+            f = open(ctx.cache_dir / f"tags/{imgid}.json","r")
         except Exception as e:
             print("failed to load tags of",imgid,"exception:",e)
             tofix.append(imgid)
             # with open(f"tags/default.json","r") as f: return json.load(f)
 
+
+    client = GelbooruClient(ctx)
+    service = TagService(client)
+
+    for img in tofix:
+        print(f"Fixing Tag for Img: {img}")
+        if not service.refreshImageMetadata(img):
+            print(f"Could not Fix Tags for {img}")
+
+    printtime(timecounter,f"fixed all tags in: ")
+
+
+"""
     fixThreads = []
     for i in range(maxnum):
         imgid = tofix.pop(randrange(0,len(tofix)))
@@ -397,8 +412,7 @@ def fixALLImgTags(maxnum=10):
     for imgid in fixing:
         setflag(imgid,"fixed")
     print("(hopefully) fixed",len(fixing),"images.",len(tofix),"remaining")
-
-    printtime(timecounter,f"fixed all tags in: ")
+"""
 
 
 def quickrandexist():
@@ -570,7 +584,7 @@ def main():
 
         case "fixtags":
             # fixtagdata()
-            fixALLImgTags(args[2])
+            fixALLImgTags()
 
         case "getags":
             img = latestImg()
