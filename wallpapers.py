@@ -330,20 +330,22 @@ def randomExist(args = [],copy=False,copydest="",name=False):
                 selectimgs = [f for f in os.listdir(Wallpaper_Folder)]
                 cache.add(args,selectimgs,"any")
         else:
-            print("Getting Cache Querry")
+            #print("Getting Cache Querry")
             selectimgs = cache.get(querry = args)
             if(not selectimgs):
-                print("Not in Cache")
+                #print("Not in Cache")
                 try:
                     selectimgs = filterImgs(args)
-                    print(f"Imgs selected {len(selectimgs)}")
+                    #print(f"Imgs selected {len(selectimgs)}")
                     cache.add(args,selectimgs)
-                    print("added to cache?")
+                    #print("added to cache?")
                 except Exception as e:
+                    #print("Crashed Query??")
                     print(e)
 
             # selectimgs = [f for f in os.listdir(Wallpaper_Folder)]
-            print("found",len(selectimgs),"images with given tags")
+            #print(type(selectimgs))
+            print(f"found {len(selectimgs)}, images with given tags")
 
     if(copy):
         for image in selectimgs:
@@ -586,9 +588,9 @@ def main():
             # fixtagdata()
             fixALLImgTags(args[2])
 
-        case "getags":
+        case "gettags":
             img = latestImg()
-            data = getData(img)
+            data = getData(img, ctx.cache_dir)
             print(img)
             for thing in data:
                 print(f"{thing}: {data[thing]}")
