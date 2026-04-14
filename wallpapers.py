@@ -48,80 +48,53 @@ COPY_OUT_PATH = env.get("COPY_OUTPUT_DESTINATION")
 
 HELPSTRING = """Fun Utility for downloading Wallpapers from a questionable Source :)
 Possible args:
-get [args]
-    gets an image using args as geltags
+get [args] gets an image using args as Geltags, with the following special stuff:
+--limit:NUM gets NUM images instead of just one (Gel can return less than this number if there are duplicates or less results)
+--max_tries:NUM changes number of maxtries, usually not necessary, only really usefull if you look for random images and most but not all are already downloaded
+--safe short for "rating:general"
+--sort returns images in descending order of ID (newest image first) instead of randomly ordered
 
-    --limit:NUM gets NUM images instead of just one (Gel can return less than this number if there are duplicates or less results)
+exist [args] looks through local images using args as Geltags with the following special stuff:
+this:IMAGE_ID sets this image
+flag:FLAG looks for all images with this flag
+--wide images where width > height (incl square)
+--narrow images where width --square images where width = height
+height:NUM images with this minimum height (accepts 1k,2k,4k as shorts for the corresponding pixelsizes)
+width:NUM same as height but for width
+-ARG excludes the tag instead (as on Gel, also works with ratings)
 
-    --max_tries:NUM changes number of maxtries, usually not necessary, only really usefull if you look for random images and most but not all are already downloaded
+copy [ARGS] copies the current wallpaper to copyout. If args are given copies ALL images with these to copyout. Change output directory with "folder:DEST"
 
-    --safe short for "rating:general"
+flag FLAG sets the flag of the current image to FLAG
 
-    --sort returns images in descending order of ID (newest image first) instead of randomly ordered
+fixtags currently broken (-_-)
 
-exist [args]
-    this:IMAGE_ID sets this image
+getags prints tags of the current image
 
-    flag:FLAG looks for all images with this flag
+recache refreshes all searches in cache that have been used a bit (deletes the rest)
 
-    --wide images where width > height (incl square)
+prev [num] sets the previous image, or goes the specifed number of images back. Careful: [num] is WIP and since we just add the latest image to the queue, it will get flooded and you will get the same image if you repeateldy do it.
 
-    --narrow images where width < height (incl square)
+prevsearch triggers the last used search with exist or direct name search again (very cool, I love this one)
 
-    --square images where width = height
+addfave NAME [TAGS] adds an entry in the fave list with the given name and tags, so that you can subsequently use udpate_faves to get the newest images of your favorite searches
 
-    height:NUM images with this minimum height (accepts 1k,2k,4k as shorts for the corresponding pixelsizes)
+update_faves [NUM] gets the newest NUM images (default is 99) of all your faves
 
-    width:NUM same as height but for width
+reset sets the image "default.png" as wallpaper (will fail if it doesn't exist obviously)
 
-    any other arg is used as tags (including appending "-" to exclude tags, and also including "rating:XYZ")
 
-flag FLAG
-    sets the flag of the current image to FLAG
+printflags looks through all images and prints all flags that you set (just to remind you if you forgot how you called something)
 
-fixtags
-    currently broken (-_-)
+refresh should set the current wallpaper to latest if your wallpaper manager messed up, but you wallpaper manager messes up and it currently doesn't work
 
-getags
-    prints tags of the current image
+qer QuickRandomExist (no typo here) is a way quicker version of "exist" over all images
 
-recache
-    refreshes all searches in cache that have been used a bit (deletes the rest)
+compare WIP should print stats and allow comparing tags and stuff but I lost the implementation file :(
 
-prev [num]
-    sets the previous image, or goes the specifed number of images back. Careful: [num] is WIP and since we just add the latest image to the queue, it will get flooded and you will get the same image if you repeateldy do it.
+taginfo WIP
 
-prevsearch
-    triggers the last used search with exist or direct name search again (very cool, I love this one)
-
-addfave NAME [TAGS]
-    adds an entry in the fave list with the given name and tags, so that you can subsequently use udpate_faves to get the newest images of your favorite searches
-
-update_faves [NUM]
-    gets the newest NUM images (default is 99) of all your faves
-
-reset:
-    sets the image "default.png" as wallpaper (will fail if it doesn't exist obviously)
-
-copy:
-    if no further arguments added copies the current wallpaper to the default copyout directory. Otherwise looks for ALL images matching the given tags and copies them to the default directory,
-printflags
-    looks through all images and prints all flags that you set (just to remind you if you forgot how you called something)
-
-refresh
-    should set the current wallpaper to latest if your wallpaper manager messed up, but you wallpaper manager messes up and it currently doesn't work
-
-qer
-    QuickRandomExist (no typo here) is a way quicker version of "exist" over all images
-
-compare
-    WIP should print stats and allow comparing tags and stuff but I lost the implementation file :(
-
-taginfo
-    WIP
-
-help
-    prints this thing here
+help prints this thing here
 
 If you pass an argument that is not in this list it'll cache a new search using the first argument as the name and the remaining ones as tags and subsequently you can access this search by just using the name (so just "./wallpapers.py NAME")
 
@@ -139,32 +112,7 @@ totalPostReqTime = []
 rawReqTimes = []
 rawDLTimes = []
 
-
-
-def sendwallpaper(filepath, plugin='org.kde.image'):
-    jscript = """
-    var allDesktops = desktops();
-    print (allDesktops);
-    for (i=0;i<allDesktops.length;i++) {
-        d = allDesktops[i];
-        d.wallpaperPlugin = "%s";
-        d.currentConfigGroup = Array("Wallpaper", "%s", "General");
-        d.writeConfig("Image", "file://%s")
-    }
-    """
-    bus = dbus.SessionBus()
-    plasma = dbus.Interface(bus.get_object(
-        'org.kde.plasmashell', '/PlasmaShell'), dbus_interface='org.kde.PlasmaShell')
-    plasma.evaluateScript(jscript % (plugin, plugin, filepath))
-
-
-def setWallpaper(image):
-    filepath = f"{Wallpaper_Folder}{image}"
-    if("." in image):
-        imgid = image[:image.find(".")]
-    else:
-        imgid = image
-    subprocess.Popen(f'plasma-apply-wallpaperimage "{filepath}"', shell=True)
+def add_occurance(imgid):
     with open(f"{DESKTOP_PATH}/wallpaperURL.desktop","w") as f: f.write(f"[Desktop Entry]\nIcon=/{WALL_HOME_PATH}/gelbooru-logo.svg\nName=wallpaperURL\nType=Link\nURL[$e]=https://gelbooru.com/index.php?page=post&s=view&id={imgid}")
     with open ("latest.txt","w") as f: f.write(imgid)
     with open ("history.txt","a") as f: f.write(f"{imgid}; {d.now()}\n")
@@ -174,6 +122,42 @@ def setWallpaper(image):
     except:
         imgdata["occurances"] = 1
     setData(imgid, imgdata, ctx.cache_dir)
+
+def setWallpaper_Android(image):
+    #TODO Testing, worked once on my device :)
+    if("." in image):
+        imgid = image[:image.find(".")]
+    else:
+        imgid = image
+
+    filepath = f"{Wallpaper_Folder}{image}"
+    subprocess.Popen(f'am start -a android.intent.action.ATTACH_DATA -t "image/*" -d file:{filepath}', shell=True)
+    add_occurance(imgid)
+
+def setWallpaper_MacOS(image):
+    #TODO Testing, worked once on friends' device :)
+
+    if("." in image):
+        imgid = image[:image.find(".")]
+    else:
+        imgid = image
+
+    filepath = f"{Wallpaper_Folder}{image}"
+    script = f"""
+    osascript -e 'tell application "Finder" to set desktop picture to POSIX file "{filepath}"'
+    """
+    os.system(script)
+    add_occurance(imgid)
+
+def setWallpaper(image):
+    if("." in image):
+        imgid = image[:image.find(".")]
+    else:
+        imgid = image
+
+    filepath = f"{Wallpaper_Folder}{image}"
+    subprocess.Popen(f'plasma-apply-wallpaperimage "{filepath}"', shell=True)
+    add_occurance(imgid)
 
 
 def setflag(imgid,flag):
@@ -587,6 +571,13 @@ def main():
         case "fixtags":
             # fixtagdata()
             fixALLImgTags(args[2])
+
+        case "getags":
+            img = latestImg()
+            data = getData(img, ctx.cache_dir)
+            print(img)
+            for thing in data:
+                print(f"{thing}: {data[thing]}")
 
         case "gettags":
             img = latestImg()
