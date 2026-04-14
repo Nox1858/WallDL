@@ -1,6 +1,6 @@
 import requests
 import time
-from random import randrange
+from random import randint
 from dataclasses import dataclass, field
 
 from AppContext import AppContext
@@ -78,7 +78,7 @@ class GelbooruClient:
             except (requests.RequestException, ValueError) as exc:
                 last_error = exc
                 if attempt < self.options.max_retries - 1:
-                    delay = random.randint(
+                    delay = randint(
                         self.options.backoff_min_ms,
                         self.options.backoff_max_ms,
                     ) / 1000
@@ -131,7 +131,7 @@ class GelbooruClient:
             except requests.RequestException as exc:
                 last_error = exc
                 if attempt < max_retries - 1:
-                    delay = random.randint(
+                    delay = randint(
                         self.options.backoff_min_ms,
                         self.options.backoff_max_ms,
                     ) / 1000
