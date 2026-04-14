@@ -109,6 +109,7 @@ def get(args: list[str], ctx: AppContext, quiet: bool = False, setwall: bool = T
     if result.downloadedPosts:
         tagService.saveImageMetadata(result.downloadedPosts)
         tagService.saveTagData(tagdataPath)
+        print("Saved Tag Data")
 
     if result.latestFilename and setwall and options.setWallpaper:
         setWallpaper(result.latestFilename, ctx)

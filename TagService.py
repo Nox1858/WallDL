@@ -127,3 +127,4 @@ class TagService:
             img_id = int(post["id"])
             metadata = self.buildImageMetadata(post)
             setData(img_id, metadata, self.client.ctx.cache_dir)
+            print(f"{img_id} : {metadata}")

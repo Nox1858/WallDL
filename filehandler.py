@@ -18,7 +18,7 @@ def getData(imgid: str, cacheFolder: Path = Path(".")) -> dict:
 
 def setData(imgid: int ,data: dict, cacheFolder: Path = Path(".")):
     # timecounter = time.time_ns()
-    with open(cacheFolder / "tags/{imgid}.json","w") as f:
+    with open(cacheFolder / f"tags/{imgid}.json","w") as f:
         json.dump(data,f)
         # print("imgtags write overhead:",(time.time_ns()-timecounter)/1000000,"ms")
     getData.cache_clear()
