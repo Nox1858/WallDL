@@ -12,7 +12,7 @@ def formattime(timenum: int):
     timesize = "ns"
     if(timenum > 1000):
         timenum = timenum/1000
-        timesize = "microsec"
+        timesize = " microsec"
         if(timenum > 1000):
             timenum = timenum/1000
             timesize = "ms"
