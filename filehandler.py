@@ -29,7 +29,7 @@ def checkExisting(imgid: int, wallpaperFolder: str ,sendnote = True) -> bool:
     for image in images:
         if(image[:image.find(".")] == str(imgid)): return True
 
-    with open("downloaded.txt","a") as f: f.write(str(imgid)+"\n")
+    #with open("downloaded.txt","a") as f: f.write(str(imgid)+"\n")
     return False
 
 
@@ -51,6 +51,6 @@ class ImageStorage:
             if(item.is_file() and item.stem == postID):
                 return True
 
-        with open("downloaded.txt","a") as f: f.write(str(postID)+"\n")
+        #with open("downloaded.txt","a") as f: f.write(str(postID)+"\n")
         return False
 
