@@ -338,8 +338,19 @@ def randomExist(args = [],copy=False,copydest="",name=False):
     # printtime(timecounter,"filtered images in ")
     if(len(selectimgs) == 0):
         notify("failed to find images with given filter")
+    if(len(selectimgs) == 1):
+        notify("Congratulations, you found a perfect match!!")
+        setWallpaper(selectimgs[0])
     else:
-        randimg = selectimgs[randrange(0,len(selectimgs))]
+        latest = latestImg()
+        tries = 0
+        while True:
+            tries += 1
+            randimg = selectimgs[randrange(0,len(selectimgs))]
+            if(not latest == randimg[:randimg.find(".")]):
+                if(tries > 1):
+                    print("took",tries,"tries to get non duplicate")
+                break
         setWallpaper(randimg)
         printtime(timecounter,f"set one out of {len(selectimgs)} in ",notification=True)
         # notify()
