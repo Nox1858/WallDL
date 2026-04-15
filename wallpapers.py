@@ -53,7 +53,7 @@ Possible args:
 "get [args]" gets an image using args as Geltags, with the following special stuff:
     "--limit:NUM" gets NUM images instead of just one (Gel can return less than this number if there are duplicates or less results)
     "--max_tries:NUM" changes number of maxtries, usually not necessary, only really usefull if you look for random images and most but not all are already downloaded
-    "--safe" short for "rating:general"
+    "--unsafe" disable default safe filter (still filters a bit of stuff)
     "--sort" returns images in descending order of ID (newest image first) instead of randomly ordered
 
 "exist [args]" looks through local images using args as Geltags with the following special stuff:

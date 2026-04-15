@@ -25,6 +25,7 @@ def parseDownloadArgs(args: list[str], defaultMaxTries: int = 5) -> DownloadOpti
         setWallpaper=True
         )
 
+    safe = True
     for arg in args:
         if arg.startswith("--limit:"):
             options.limit = int(arg.split(":", 1)[1])
@@ -32,8 +33,8 @@ def parseDownloadArgs(args: list[str], defaultMaxTries: int = 5) -> DownloadOpti
         elif arg.startswith("--max_tries:"):
             options.maxTries = int(arg.split(":", 1)[1])
 
-        elif arg == "--safe":
-            options.tags.append("rating:general")
+        elif arg == "--unsafe":
+            safe = False
 
         elif arg == "--sort":
             options.random = False
@@ -43,6 +44,9 @@ def parseDownloadArgs(args: list[str], defaultMaxTries: int = 5) -> DownloadOpti
 
     if options.limit > 400:
         options.maxTries = max(options.maxTries, int(options.limit / 100) + 1)
+
+    if(safe):
+        options.tags.append("rating:general")
 
     return options
 
