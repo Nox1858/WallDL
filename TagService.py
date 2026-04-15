@@ -127,7 +127,7 @@ class TagService:
             img_id = int(post["id"])
             metadata = self.buildImageMetadata(post)
             setData(img_id, metadata, self.client.ctx.cache_dir)
-            print(f"{img_id} : {metadata}")
+            #print(f"{img_id} : {metadata}")
 
     def refreshImageMetadata(self, imageID: int) -> bool:
         posts = self.client.getPosts(PostQuery(tags=[f"id:{imageID}"], random=False, limit=1))
