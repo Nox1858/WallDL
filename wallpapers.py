@@ -506,8 +506,10 @@ def getcount(tags):
     if(not selectimgs): selectimgs = filterImgs(tags)
     return len(selectimgs)
 
-def printstats(querry):
+
+def getstats(querry):
     total = getcount(querry)
+
     querry.append("rating:general")
     safe = getcount(querry)
     querry.remove("rating:general")
@@ -520,24 +522,27 @@ def printstats(querry):
     querry.append("rating:explicit")
     explicit = getcount(querry)
     querry.remove("rating:explicit")
-    # print(querry)
-    print(f"total results: {total}")
-    print(f"distribution: {safe} / {questionable} / {sensitive} / {explicit}")
+    return [total, safe, questionable, sensitive, explicit]
 
-def taginfo(tag):
-    with open(f"tagdata.json", "r") as f: fullTagData = json.load(f)
-    tagdata = fullTagData[tag]
-    print("total",tagdata["count"])
-    print("total g/q/s/e:","TODO")
-    totcount = getcount([tag])
-    print("local images with tag:",totcount)
-    gperc = int(10000*getcount([tag,"rating:general"])/totcount)/100
-    qperc = int(10000*getcount([tag,"rating:questionable"])/totcount)/100
-    sperc = int(10000*getcount([tag,"rating:sensitive"])/totcount)/100
-    eperc = int(100*(100-gperc-qperc-sperc))/100
-    print("local g/q/s/e:",f"{gperc}/{qperc}/{sperc}/{eperc}")
-    print("most common subtags:","TODO")
-    print("previous appearances:","TODO")
+
+def perc(number,total):
+    return f"{int(number*10000/total)/100}%"
+
+def compare(stuff):
+    entries = {}
+    for thing in stuff:
+        querry = thing.split("++")
+        entries[str(querry)] = getstats(querry)
+    out = ["              ","Total:        ","Safe:         ","Questionable: ", "Sensitive:    ", "Explicit:     "]
+    for entry in entries:
+        total = entries[entry][0]
+        titlen = len(str(entry))
+        for i in range(4):
+            out[i+2] += f"{perc(entries[entry][i+1],total):>{titlen}}  "
+        out[0] += f"{entry:>{titlen}}  "
+        out[1] += f"{total:>{titlen}}  "
+    for i in range(6):
+        print(out[i])
 
 def main():
     timecounter = time.time_ns()
@@ -550,14 +555,8 @@ def main():
     match args[1]:
         # case "qgr":
         #     quickdl() #ended up being slower than whathever I did last time, dunno how, appearently I did well...
-        case "taginfo":
-            for arg in args[2:]:
-                taginfo(arg)
         case "compare":
-            for thing in args[2:]:
-                querry = thing.split("++")
-                print(thing,querry)
-                printstats(querry)
+            compare(args[2:])
         case "prevsearch":
             with open("prevsearch.txt","r") as f: name = f.read()
             print(name)
