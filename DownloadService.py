@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 import time
 
 from webreq_helpers import PostQuery, GelbooruClient
@@ -93,7 +93,7 @@ class DownloadService:
 
             candidates = posts[:remaining]
 
-            with ThreadPoolExecutor(max_workers=min(self.maxThreads, max(1, len(candidates)))) as executor:
+            with ThreadPoolExecutor(max_workers=10) as executor:
                 futures = {
                         executor.submit(self.__downloadPost, post) : post for post in candidates
                     }

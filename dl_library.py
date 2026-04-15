@@ -111,8 +111,10 @@ def get(args: list[str], ctx: AppContext, quiet: bool = False, setwall: bool = T
     result = downloadService.downloadPosts(query, maxTries=options.maxTries)
 
     if result.downloadedPosts:
+        timer = time.time_ns()
         tagService.saveImageMetadata(result.downloadedPosts)
         tagService.saveTagData(tagdataPath)
+        printtime(timer, "Saved all Tags in: ")
         print("Saved Tag Data")
 
     if result.latestFilename and setwall and options.setWallpaper:
