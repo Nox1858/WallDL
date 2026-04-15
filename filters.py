@@ -81,9 +81,9 @@ def splitList(l :list[str], n: int) -> list[list[str]]:
     n = max(1, n)
     return [l[i:i + n] for i in range(0, len(l), n)]
 
-def filterLocalImages(parsedArgs: LocalFilterArgs, imagePath: str, latest: str, ctx: AppContext) -> list[str]:
+def filterLocalImages(parsedArgs: LocalFilterArgs, imagePath: str, latest: str, ctx: AppContext, quiet: bool = True) -> list[str]:
     images = getAllImages(imagePath)
-    print(f"got images: {len(images)}")
+    if(not quiet): print(f"got images: {len(images)}")
     if parsedArgs.selection is not None:
         selection_image = next(
             (image for image in images if image.rsplit(".", 1)[0] == parsedArgs.selection),
@@ -112,7 +112,7 @@ def filterLocalImages(parsedArgs: LocalFilterArgs, imagePath: str, latest: str, 
             result = future.result(timeout=10)
             filtered_images.extend(result)
 
-    print(f"total filtered: {len(filtered_images)}")
+    if(not quiet): print(f"total filtered: {len(filtered_images)}")
     return filtered_images
 
 def filterThreadHandler(images: list[str], args: LocalFilterArgs, latest: str, ctx: AppContext) -> list[str]:

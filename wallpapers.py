@@ -91,7 +91,7 @@ Possible args:
 
 "qer" QuickRandomExist (no typo here) is a way quicker version of "exist" over all images
 
-"compare" WIP should print stats and allow comparing tags and stuff but I lost the implementation file :(
+"compare [tag1++tag2++...] [tag1++tag2++...]" still WIP, you can now check a configuration of tags by writing them together ++ between them. doing this several times just does seperate checks, so the 'compare' part isn't really there yet, it just gives stats
 
 "taginfo" WIP
 
@@ -285,12 +285,12 @@ def handleTagRequests(fixing=False):
 selectimgs = []
 
 
-def filterImgs(args):
+def filterImgs(args, quiet = True):
     parsedArgs = filters.parseLocalArgs(args)
-    print("parsed args")
+    if(not quiet): print("parsed args")
     try:
         images = filters.filterLocalImages(parsedArgs, Wallpaper_Folder, latestImg, ctx)
-        print(f"filtered images {len(images)}")
+        if(not quiet): print(f"filtered images {len(images)}")
     except BaseException as e:
         print("test")
         print(e)
@@ -520,9 +520,9 @@ def printstats(querry):
     querry.append("rating:explicit")
     explicit = getcount(querry)
     querry.remove("rating:explicit")
-    print(querry)
+    # print(querry)
     print(f"total results: {total}")
-    print(f"distribution:{safe}/{questionable}/{sensitive}/{explicit} ")
+    print(f"distribution: {safe} / {questionable} / {sensitive} / {explicit}")
 
 def taginfo(tag):
     with open(f"tagdata.json", "r") as f: fullTagData = json.load(f)
@@ -555,7 +555,8 @@ def main():
                 taginfo(arg)
         case "compare":
             for thing in args[2:]:
-                querry = thing.split(" ")
+                querry = thing.split("++")
+                print(thing,querry)
                 printstats(querry)
         case "prevsearch":
             with open("prevsearch.txt","r") as f: name = f.read()
