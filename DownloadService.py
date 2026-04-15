@@ -43,7 +43,7 @@ class DownloadService:
     def __init__(self, client: GelbooruClient, storage: ImageStorage):
         self.client = client
         self.storage = storage
-        self.maxThreads = 8
+        self.maxThreads = 10
 
     def __downloadPost(self, post: dict) -> DownloadPostResult:
         postID = post["id"]
@@ -93,7 +93,7 @@ class DownloadService:
 
             candidates = posts[:remaining]
 
-            with ThreadPoolExecutor(max_workers=10) as executor:
+            with ThreadPoolExecutor(max_workers=self.maxThreads) as executor:
                 futures = {
                         executor.submit(self.__downloadPost, post) : post for post in candidates
                     }
