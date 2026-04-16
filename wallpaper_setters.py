@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 from filehandler import getData, setData
+from AppContext import AppContext
 
 def add_occurance(img_id, ctx: AppContext):
     Path("latest.txt").write_text(img_id)
