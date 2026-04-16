@@ -380,7 +380,7 @@ def fixALLImgTags(maxnum=10):
 def quickrandexist():
     images = [f for f in os.listdir(Wallpaper_Folder)]
     randimg = images[randrange(0,len(images))]
-    setWallpaper(randimg)
+    setWallpaper(randimg,ctx)
 
 def printallflags():
     images = [f for f in os.listdir(Wallpaper_Folder)]
@@ -418,7 +418,7 @@ def getprevwall(num): #0 is current, 1 is last, 2 is the one before last etc
     images = [f for f in os.listdir(Wallpaper_Folder)]
     for image in images:
         if(image[:image.find(".")] == str(imid)):
-            setWallpaper(image)
+            setWallpaper(image,ctx)
     return imid
 
 def add_fave(name, querry, ctx):
@@ -548,7 +548,7 @@ def main():
             images = [f for f in os.listdir(Wallpaper_Folder)]
             for image in images:
                 if(image[:image.find(".")] == latest):
-                    setWallpaper(image)
+                    setWallpaper(image,ctx)
         case "prev":
             try:
                 imid = getprevwall(args[2])
@@ -607,7 +607,7 @@ def main():
 
         case "reset":
             notify("resetting wallpaper...")
-            setWallpaper("default.png")
+            setWallpaper("default.png",ctx)
 
         case "help":
             print(HELPSTRING)
