@@ -14,6 +14,8 @@ from filehandler import ImageStorage, getData, setData
 from TagService import TagRecord, TagService
 from DownloadService import DownloadService, DownloadOptions
 
+from wallpaper_setters import *
+
 def parseDownloadArgs(args: list[str], defaultMaxTries: int = 5) -> DownloadOptions:
     options = DownloadOptions(
         tags=[],
@@ -49,35 +51,6 @@ def parseDownloadArgs(args: list[str], defaultMaxTries: int = 5) -> DownloadOpti
         options.tags.append("rating:general")
 
     return options
-
-
-def setWallpaper(image: str, ctx: AppContext) -> None:
-    wallpaper_path = ctx.wallpaper_dir / image
-    img_id = Path(image).stem
-
-    subprocess.run(
-        ["plasma-apply-wallpaperimage", str(wallpaper_path)],
-        check=False,
-    )
-
-    desktop_link_path = Path(ctx.env.get("DESKTOP_PATH")) / "wallpaperURL.desktop"
-    desktop_link_path.write_text(
-        (
-            "[Desktop Entry]\n"
-            f"Icon={ctx.cache_dir / 'gelbooru-logo.svg'}\n"
-            "Name=wallpaperURL\n"
-            "Type=Link\n"
-            f"URL[$e]=https://gelbooru.com/index.php?page=post&s=view&id={img_id}"
-        )
-    )
-
-    Path("latest.txt").write_text(img_id)
-    with open("history.txt", "a") as f:
-        f.write(f"{img_id}; {datetime.now()}\n")
-
-    imgdata = getData(img_id, ctx.cache_dir)
-    imgdata["occurances"] = imgdata.get("occurances", 0) + 1
-    setData(img_id, imgdata, ctx.cache_dir)
 
 
 def get(args: list[str], ctx: AppContext, quiet: bool = False, setwall: bool = True, maxTries:int = 5) ->int :

@@ -38,9 +38,6 @@ env = Environment(".env")
 API_KEY = env.get("API_KEY")
 USER_ID = env.get("USER_ID")
 
-#options are Plasma, MacOS, Android for now, please set!!
-DESKTOP_MANAGER = env.get("DESKTOP_MANAGER")
-
 ctx = AppContext(env=env)
 cache = SearchCache("searchcache.json", ctx)
 
@@ -115,63 +112,6 @@ totalDLSize = []
 totalPostReqTime = []
 rawReqTimes = []
 rawDLTimes = []
-
-def add_occurance(imgid):
-    with open(f"{DESKTOP_PATH}/wallpaperURL.desktop","w") as f: f.write(f"[Desktop Entry]\nIcon=/{WALL_HOME_PATH}/gelbooru-logo.svg\nName=wallpaperURL\nType=Link\nURL[$e]=https://gelbooru.com/index.php?page=post&s=view&id={imgid}")
-    with open ("latest.txt","w") as f: f.write(imgid)
-    with open ("history.txt","a") as f: f.write(f"{imgid}; {d.now()}\n")
-    imgdata = getData(imgid, ctx.cache_dir)
-    try:
-        imgdata["occurances"] += 1
-    except:
-        imgdata["occurances"] = 1
-    setData(imgid, imgdata, ctx.cache_dir)
-
-def setWallpaper_Android(image):
-    #TODO Testing, worked once on my device :)
-    if("." in image):
-        imgid = image[:image.find(".")]
-    else:
-        imgid = image
-
-    filepath = f"{Wallpaper_Folder}{image}"
-    subprocess.Popen(f'am start -a android.intent.action.ATTACH_DATA -t "image/*" -d file:{filepath}', shell=True)
-    add_occurance(imgid)
-
-def setWallpaper_MacOS(image):
-    #TODO Testing, worked once on friends' device :)
-
-    if("." in image):
-        imgid = image[:image.find(".")]
-    else:
-        imgid = image
-
-    filepath = f"{Wallpaper_Folder}{image}"
-    script = f"""
-    osascript -e 'tell application "Finder" to set desktop picture to POSIX file "{filepath}"'
-    """
-    os.system(script)
-    add_occurance(imgid)
-
-
-def setWallpaper_Plasma(image):
-    if("." in image):
-        imgid = image[:image.find(".")]
-    else:
-        imgid = image
-
-    filepath = f"{Wallpaper_Folder}{image}"
-    subprocess.Popen(f'plasma-apply-wallpaperimage "{filepath}"', shell=True)
-    add_occurance(imgid)
-
-def setWallpaper(image):
-    match DESKTOP_MANAGER:
-        case "Plasma":
-            setWallpaper_Plasma(image)
-        case "MacOS":
-            setWallpaper_MacOS(image)
-        case "Android":
-            setWallpaper_Android(image)
 
 def setflag(imgid,flag):
     data = getData(imgid, ctx.cache_dir)
@@ -313,7 +253,7 @@ def filterImgs(args, quiet = True):
 def copyout(image,folder = ""):
     shutil.copyfile(Wallpaper_Folder+image, COPY_OUT_PATH+folder+image)
 
-def randomExist(args = [],copy=False,copydest="",name=False):
+def randomExist(ctx, args = [],copy=False,copydest="",name=False):
     timecounter = time.time_ns()
     if(name):
         selectimgs = cache.get(querry = [], name = name)
@@ -352,7 +292,7 @@ def randomExist(args = [],copy=False,copydest="",name=False):
         notify("failed to find images with given filter")
     if(len(selectimgs) == 1):
         notify("Congratulations, you found a perfect match!!")
-        setWallpaper(selectimgs[0])
+        setWallpaper(selectimgs[0], ctx)
     else:
         latest = latestImg()
         tries = 0
@@ -363,7 +303,7 @@ def randomExist(args = [],copy=False,copydest="",name=False):
                 if(tries > 1):
                     print("took",tries,"tries to get non duplicate")
                 break
-        setWallpaper(randimg)
+        setWallpaper(randimg,ctx)
         printtime(timecounter,f"set one out of {len(selectimgs)} in ",notification=True)
         # notify()
     # timecounter = time.time_ns()
@@ -589,7 +529,7 @@ def main():
         case "prevsearch":
             with open("prevsearch.txt","r") as f: name = f.read()
             print(name)
-            randomExist({"rating:general"},name=name)
+            randomExist(ctx, {"rating:general"},name=name)
         case "qer":
             quickrandexist()
 
@@ -651,7 +591,7 @@ def main():
             get(args[2:],ctx)
 
         case "exist":
-            randomExist(args[2:])
+            randomExist(ctx, args[2:])
 
         case "copy":
             copydest = ""
@@ -661,9 +601,9 @@ def main():
                     copydest = arg[arg.find(":")+1:]+"/"
                     os.makedirs(COPY_OUT_PATH+copydest,exist_ok=True)
             if(len(args) < 3):
-                randomExist([f"this:{latestImg()}"],True,copydest)
+                randomExist(ctx, [f"this:{latestImg()}"],True,copydest)
             else:
-                randomExist(args[2:],True,copydest)
+                randomExist(ctx, args[2:],True,copydest)
 
         case "reset":
             notify("resetting wallpaper...")
