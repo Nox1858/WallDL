@@ -2,9 +2,13 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
 import json
+import time
+
+from concurrent.futures import ProcessPoolExecutor
 
 from webreq_helpers import GelbooruClient, PostQuery
 from filehandler import setData
+from timer import printtime
 
 
 @dataclass
@@ -20,6 +24,7 @@ class TagService:
     def __init__(self, client: GelbooruClient, tagData: dict[str, dict] | None = None):
         self.client = client
         self.tagData = tagData or {}
+        self.maxThreads = 8
 
     def normalizeTagType(self, value: int) -> str:
         mapping = {
@@ -120,13 +125,20 @@ class TagService:
         self.ensureTagRecords(list(all_tags))
 
 
+    def saveSingleImageMetadata(self, post : dict, cacheDir : Path) -> None:
+        img_id = int(post["id"])
+        metadata = self.buildImageMetadata(post)
+        setData(img_id, metadata, cacheDir)
+
     def saveImageMetadata(self, posts: list[dict]) -> None:
         self.ensureTagsForPosts(posts)
+        #timer = time.time_ns()
+        with ProcessPoolExecutor(max_workers=self.maxThreads) as executor:
+            [executor.submit(self.saveSingleImageMetadata, post, self.client.ctx.cache_dir) for post in posts]
 
-        for post in posts:
-            img_id = int(post["id"])
-            metadata = self.buildImageMetadata(post)
-            setData(img_id, metadata, self.client.ctx.cache_dir)
+        #printtime(timer, "Saved Tags in ")
+        #for post in posts:
+            #self.saveSingleImageMetadata(post, self.client.ctx.cache_dir)
             #print(f"{img_id} : {metadata}")
 
     def refreshImageMetadata(self, imageID: int) -> bool:
