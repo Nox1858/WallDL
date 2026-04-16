@@ -25,7 +25,7 @@ env.add("DESKTOP_MANAGER",desktop_manager)
 env.save()
 
 os.makedirs(f"{wallpaper_cache}/tags",exist_ok=True)
-with open(f"{wallpaper_cache}/searchcache.json","w") as f: f.write("{}")
+with open(f"{wallpaper_cache}/searchcache.json","w") as f: f.write('{"any":{"querry": [""], "used": 0, "date": "2026-01-31 23:59:59.0", "results":[]}"')
 with open(f"{wallpaper_cache}/tagdata.json","w") as f: f.write("{}")
 with open(f"{wallpaper_cache}/faves.json","w") as f: f.write("{}")
 

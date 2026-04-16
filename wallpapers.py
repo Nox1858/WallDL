@@ -447,7 +447,7 @@ def update_faves(ctx, getnum = 99):
         if(d.now()-updated > timedelta(days = cutoff)):
             print("updating",entry,querry,"...")
             querry.append(f"--limit:{getnum}")
-            updates += get(querry,quiet = True, setwall = False,maxTries=1)
+            updates += get(querry, ctx, quiet = True, setwall = False,maxTries=1)
             querry.remove(f"--limit:{getnum}")
             print("finished getting stuff")
             data[entry]["updated"] = str(d.now())
@@ -537,7 +537,7 @@ def main():
             cache.refresh(filterFunc=filterImgs)
 
         case "addfave":
-            add_fave(ctx, args[2],args[3:])
+            add_fave(args[2],args[3:],ctx)
 
         case "update_faves":
             update_faves(ctx, getnum = args[2])
