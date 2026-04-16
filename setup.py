@@ -28,8 +28,5 @@ os.makedirs(f"{wallpaper_cache}/tags",exist_ok=True)
 with open(f"{wallpaper_cache}/searchcache.json","w") as f: f.write("{}")
 with open(f"{wallpaper_cache}/tagdata.json","w") as f: f.write("{}")
 with open(f"{wallpaper_cache}/faves.json","w") as f: f.write("{}")
-with open(f"{wallpaper_cache}/prevsearch.txt","w") as f: f.write("")
-with open(f"{wallpaper_cache}/history.txt","w") as f: f.write("")
-with open(f"{wallpaper_cache}/latest.txt","w") as f: f.write("")
 
 print("and we're done, have fun :)")

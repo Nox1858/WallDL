@@ -313,7 +313,7 @@ def randomExist(ctx, args = [],copy=False,copydest="",name=False):
     # printtime(timecounter,"completed doing nothing again in ")
 
 def latestImg():
-    with open ("latest.txt","r") as f:
+    with open (f"{cache_dir}/latest.txt","r") as f:
         return f.read().replace("\n","")
 
 def fixImgTags(imgid):
@@ -421,19 +421,19 @@ def getprevwall(num): #0 is current, 1 is last, 2 is the one before last etc
             setWallpaper(image)
     return imid
 
-def add_fave(name, querry):
+def add_fave(name, querry, ctx):
     querry.append("--sort")
     querry.sort()
-    with open("faves.json", "r") as f: data = json.load(f)
+    with open(f"{ctx.cache_dir}/faves.json", "r") as f: data = json.load(f)
     try:
         print("already added",name,"on",data[name]["added"])
     except:
         data[name] = {"querry":querry,"added":str(d.now()),"updated":str(d.now())}
-    with open("faves.json", "w") as f: json.dump(data,f)
+    with open(f"{ctx.cache_dir}/faves.json", "w") as f: json.dump(data,f)
 
 
-def update_faves(getnum = 99):
-    with open("faves.json", "r") as f: data = json.load(f)
+def update_faves(ctx, getnum = 99):
+    with open(f"{ctx.cache_dir}/faves.json", "r") as f: data = json.load(f)
     updates = 0
     for entry in data:
         # date = d.strptime(data[entry]["date"], "%Y-%m-%d %H:%M:%S.%f")
@@ -447,7 +447,7 @@ def update_faves(getnum = 99):
         if(d.now()-updated > timedelta(days = cutoff)):
             print("updating",entry,querry,"...")
             querry.append(f"--limit:{getnum}")
-            updates += get(querry,quiet = True, setwall = False,max_tries=1)
+            updates += get(querry,quiet = True, setwall = False,maxTries=1)
             querry.remove(f"--limit:{getnum}")
             print("finished getting stuff")
             data[entry]["updated"] = str(d.now())
@@ -458,7 +458,7 @@ def update_faves(getnum = 99):
 
     if(updates > 0):
         print("updated",updates,"faves, refreshing cache now...")
-        with open("faves.json", "w") as f: json.dump(data,f)
+        with open(f"{ctx.cache_dir}/faves.json", "w") as f: json.dump(data,f)
         cache.refresh(filterFunc=filterImgs)
     else:
         print("no new images found :(")
@@ -537,10 +537,10 @@ def main():
             cache.refresh(filterFunc=filterImgs)
 
         case "addfave":
-            add_fave(args[2],args[3:])
+            add_fave(ctx, args[2],args[3:])
 
         case "update_faves":
-            update_faves(getnum = args[2])
+            update_faves(ctx, getnum = args[2])
 
         case "refresh":
             latest = str(latestImg())
@@ -613,7 +613,7 @@ def main():
             print(HELPSTRING)
 
         case _:
-            randomExist(args[2:],name = args[1])
+            randomExist(ctx, args[2:],name = args[1])
             with open("prevsearch.txt","w") as f: f.write(args[1])
 
     printtime(timecounter,f"finished all execution in: ")
