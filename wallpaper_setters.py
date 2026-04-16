@@ -21,7 +21,7 @@ def setWallpaper_Android(wallpaper_path, img_id, ctx: AppContext):
 
 def setWallpaper_MacOS(wallpaper_path, img_id, ctx: AppContext):
     script = f"""
-    osascript -e 'tell application "Finder" to set desktop picture to POSIX file "{wallpaper_path}"'
+    osascript -e 'tell application "System Events" set desktop picture to "{wallpaper_path}"'
     """
     os.system(script)
     add_occurance(img_id, ctx)
