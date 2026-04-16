@@ -3,7 +3,6 @@ from pathlib import Path
 from datetime import datetime
 from filehandler import getData, setData
 from AppContext import AppContext
-import os
 
 def add_occurance(img_id, ctx: AppContext):
     Path("latest.txt").write_text(img_id)
@@ -21,9 +20,13 @@ def setWallpaper_Android(wallpaper_path, img_id, ctx: AppContext):
 
 def setWallpaper_MacOS(wallpaper_path, img_id, ctx: AppContext):
     script = f"""
-    osascript -e 'tell application "System Events" set desktop picture to "{wallpaper_path}"'
+    tell application "System Events"
+        tell desktop 1
+            set desktop picture to "{wallpaper_path}"'
+        end tell
+    end tell
     """
-    os.system(script)
+    subprocess.run("osascript","-e",script)
     add_occurance(img_id, ctx)
 
 
