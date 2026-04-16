@@ -38,6 +38,9 @@ env = Environment(".env")
 API_KEY = env.get("API_KEY")
 USER_ID = env.get("USER_ID")
 
+#options are Plasma, MacOS, Android for now, please set!!
+DESKTOP_MANAGER = env.get("DESKTOP_MANAGER")
+
 ctx = AppContext(env=env)
 cache = SearchCache("searchcache.json", ctx)
 
@@ -150,7 +153,8 @@ def setWallpaper_MacOS(image):
     os.system(script)
     add_occurance(imgid)
 
-def setWallpaper(image):
+
+def setWallpaper_Plasma(image):
     if("." in image):
         imgid = image[:image.find(".")]
     else:
@@ -160,6 +164,14 @@ def setWallpaper(image):
     subprocess.Popen(f'plasma-apply-wallpaperimage "{filepath}"', shell=True)
     add_occurance(imgid)
 
+def setWallpaper(image):
+    match DESKTOP_MANAGER:
+        case "Plasma":
+            setWallpaper_Plasma(image)
+        case "MacOS":
+            setWallpaper_MacOS(image)
+        case "Android":
+            setWallpaper_Android(image)
 
 def setflag(imgid,flag):
     data = getData(imgid, ctx.cache_dir)
