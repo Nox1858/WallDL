@@ -520,7 +520,8 @@ def getcount(tags):
 
 def getstats(querry):
     total = getcount(querry)
-
+    if(total == 0):
+        return False
     querry.append("rating:general")
     safe = getcount(querry)
     querry.remove("rating:general")
@@ -543,7 +544,12 @@ def compare(stuff):
     entries = {}
     for thing in stuff:
         querry = thing.split("++")
-        entries[str(querry)] = getstats(querry)
+        qerstats = getstats(querry)
+        if(qerstats):
+            entries[str(querry)] = qerstats
+        else:
+            print(querry,"didn't return any results")
+
     out = ["              ","Total:        ","Safe:         ","Questionable: ", "Sensitive:    ", "Explicit:     "]
     for entry in entries:
         total = entries[entry][0]
