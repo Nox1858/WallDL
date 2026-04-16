@@ -20,13 +20,13 @@ def setWallpaper_Android(wallpaper_path, img_id, ctx: AppContext):
 
 def setWallpaper_MacOS(wallpaper_path, img_id, ctx: AppContext):
     script = f"""
-    tell application "System Events"
+    -e tell application "System Events"
         tell desktop 1
             set desktop picture to "{wallpaper_path}"'
         end tell
     end tell
     """
-    subprocess.run("osascript","-e",script)
+    subprocess.run("osascript",script)
     add_occurance(img_id, ctx)
 
 
