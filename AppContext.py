@@ -23,3 +23,10 @@ class AppContext:
     @property
     def cache_dir(self) -> Path:
         return Path(self.env.get("WALLPAPER_CACHE"))
+
+    @property
+    def desktop_manager(self) -> str:
+        return self.env.get("DESKTOP_MANAGER")
+    @property
+    def home(self) -> Path:
+        return Path(self.env.get("HOME_PATH"))

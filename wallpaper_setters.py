@@ -41,7 +41,7 @@ def setWallpaper_Plasma(wallpaper_path, img_id, ctx: AppContext):
     desktop_link_path.write_text(
         (
             "[Desktop Entry]\n"
-            f"Icon={ctx.cache_dir / 'gelbooru-logo.svg'}\n"
+            f"Icon={ctx.home / 'gelogo.svg'}\n"
             "Name=wallpaperURL\n"
             "Type=Link\n"
             f"URL[$e]=https://gelbooru.com/index.php?page=post&s=view&id={img_id}"
@@ -53,7 +53,7 @@ def setWallpaper_Plasma(wallpaper_path, img_id, ctx: AppContext):
 def setWallpaper(image: str, ctx: AppContext) -> None:
     wallpaper_path = ctx.wallpaper_dir / image
     img_id = Path(image).stem
-    DESKTOP_MANAGER = ctx.env.get("DESKTOP_MANAGER")
+    DESKTOP_MANAGER = ctx.desktop_manager
     match DESKTOP_MANAGER:
         case "Plasma":
             setWallpaper_Plasma(wallpaper_path, img_id, ctx)
