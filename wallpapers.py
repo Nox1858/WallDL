@@ -313,7 +313,7 @@ def randomExist(ctx, args = [],copy=False,copydest="",name=False):
     # printtime(timecounter,"completed doing nothing again in ")
 
 def latestImg():
-    with open (f"{cache_dir}/latest.txt","r") as f:
+    with open (f"latest.txt","r") as f:
         return f.read().replace("\n","")
 
 def fixImgTags(imgid):
