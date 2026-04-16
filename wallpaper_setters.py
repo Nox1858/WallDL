@@ -22,11 +22,11 @@ def setWallpaper_MacOS(wallpaper_path, img_id, ctx: AppContext):
     script = f"""
     -e tell application "System Events"
         tell desktop 1
-            set desktop picture to "{wallpaper_path}"'
+            set picture to "{wallpaper_path}"'
         end tell
     end tell
     """
-    subprocess.run("osascript",script)
+    subprocess.run(["osascript","-",script])
     add_occurance(img_id, ctx)
 
 
