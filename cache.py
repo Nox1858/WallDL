@@ -104,8 +104,25 @@ class SearchCache:
 
     def list_entries(self):
         with open(self.cacheFile, "r") as f: data = json.load(f)
+        enlen = 0
+        uslen = 0
+        reslen = 0
         for entry in data:
-            print(entry,f"Querry: {data[entry]["querry"]}, Used: {data[entry]["used"]}, Results: {len(data[entry]["results"])}")
+            if(len(str(entry)) > enlen):
+                enlen = len(str(entry))
+            if(len(str(data[entry]["used"])) > uslen):
+                uslen = len(str(data[entry]["used"]))
+            if(len(str(data[entry]["results"])) > reslen):
+                reslen = len(str(len(data[entry]["results"])))
+        enlen = max(enlen,10)
+        uslen = max(uslen,4)
+        reslen = max(reslen, 6)
+
+        print(f"Identifier {"used":>{enlen+uslen-10}} {"results":>{reslen}}  {"Querry"}")
+        for entry in data:
+            used = str(data[entry]["used"])
+            results = str(len(data[entry]["results"]))
+            print(f"{entry} {used:>{enlen+uslen-len(entry)}}  {results:>{reslen}}  {str(data[entry]["querry"])}")
 
     def rmv_entries(self, to_remove):
         with open(self.cacheFile, "r") as f: data = json.load(f)
