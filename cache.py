@@ -102,3 +102,14 @@ class SearchCache:
         if(not quiet): print("search not cached")
         return False
 
+    def list_entries(self):
+        with open(self.cacheFile, "r") as f: data = json.load(f)
+        for entry in data:
+            print(entry,f"Querry: {data[entry]["querry"]}, Used: {data[entry]["used"]}, Results: {len(data[entry]["results"])}")
+
+    def rmv_entries(self, to_remove):
+        with open(self.cacheFile, "r") as f: data = json.load(f)
+        for thing in to_remove:
+            data.pop(thing)
+            print("removed",thing)
+        with open(self.cacheFile, "w") as f: json.dump(data,f)

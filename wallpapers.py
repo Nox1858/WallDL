@@ -76,6 +76,10 @@ Possible args:
 
 "recache" refreshes all searches in cache that have been used a bit (deletes the rest)
 
+cache_list" lists all entries in cache
+
+"cache_remove" thing [thing2, thing3, etc] removes all things from cache (by identifier, use cache_list first)
+
 "prev [num]" sets the previous image, or goes the specifed number of images back. Careful: [num] is WIP and since we just add the latest image to the queue, it will get flooded and you will get the same image if you repeateldy do it.
 
 "prevsearch" triggers the last used search with exist or direct name search again (very cool, I love this one)
@@ -551,6 +555,12 @@ def main():
 
         case "recache":
             cache.refresh(filterFunc=filterImgs)
+
+        case "cache_list":
+            cache.list_entries()
+
+        case "cache_remove":
+            cache.rmv_entries(args[2:])
 
         case "addfave":
             add_fave(args[2],args[3:],ctx)
