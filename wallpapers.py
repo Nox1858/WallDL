@@ -253,9 +253,9 @@ def filterImgs(args, quiet = True):
 def copyout(image,folder = ""):
     shutil.copyfile(Wallpaper_Folder+image, COPY_OUT_PATH+folder+image)
 
-def randomExist(ctx, args = [],copy=False,copydest="",name=False):
+def randomExist(ctx, args = [],copy=False,copydest="",name=None):
     timecounter = time.time_ns()
-    if(name):
+    if(name is not None):
         selectimgs = cache.get(querry = [], name = name)
         if(not selectimgs):
             selectimgs = filterImgs(args)
@@ -529,7 +529,7 @@ def main():
         case "prevsearch":
             with open("prevsearch.txt","r") as f: name = f.read()
             print(name)
-            randomExist(ctx, {"rating:general"},name=name)
+            randomExist(ctx, args=["rating:general"],name=name)
         case "qer":
             quickrandexist()
 
@@ -613,7 +613,7 @@ def main():
             print(HELPSTRING)
 
         case _:
-            randomExist(ctx, args[2:],name = args[1])
+            randomExist(ctx, args[2:], name = args[1])
             with open("prevsearch.txt","w") as f: f.write(args[1])
 
     printtime(timecounter,f"finished all execution in: ")
