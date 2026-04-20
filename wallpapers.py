@@ -92,7 +92,11 @@ Possible args:
 
 "qer" QuickRandomExist (no typo here) is a way quicker version of "exist" over all images
 
-"compare [tag1++tag2++...] [tag1++tag2++...]" still WIP, you can now check a configuration of tags by writing them together ++ between them. doing this several times just does seperate checks, so the 'compare' part isn't really there yet, it just gives stats
+"compare [tag1++tag2++...] [tag1++tag2++...]" compares the stats of any number of sets of tags (each written as one string with ++ between them) optionally add --local/--global to a set to change where to look for stats
+
+"compare-local" same as default compare
+
+"compare-global" looks at global stats per default instead
 
 "taginfo" WIP
 
@@ -492,10 +496,15 @@ def getLocalStats(querry):
 def perc(number,total):
     return f"{int(number*10000/total)/100}%"
 
-def compare(stuff,local=True):
+def compare(stuff,glocal=True):
     entries = {}
     for thing in stuff:
+        local = glocal
         querry = thing.split("++")
+        if("--local" in querry):
+            local = True
+        if("--global" in querry):
+            local = False
         if(local):
             qerstats = getLocalStats(querry)
         else:
@@ -547,7 +556,12 @@ def main():
             add_fave(args[2],args[3:],ctx)
 
         case "update_faves":
-            update_faves(ctx, getnum = args[2])
+            try:
+                num = args[2]
+            except:
+                num = 99
+            update_faves(ctx, num)
+
 
         case "refresh":
             latest = str(latestImg())
