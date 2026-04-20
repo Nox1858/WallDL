@@ -1,6 +1,7 @@
 from env import Environment
 from dataclasses import dataclass, field
 from pathlib import Path
+import json
 
 @dataclass
 class AppContext:
@@ -30,3 +31,8 @@ class AppContext:
     @property
     def home(self) -> Path:
         return Path(self.env.get("HOME_PATH"))
+
+    @property
+    def cookies(self) -> dict[str : str]:
+        data = json.loads(self.env.get("COOKIES"))
+        return dict(data)

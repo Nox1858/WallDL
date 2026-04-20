@@ -52,6 +52,10 @@ class GelbooruClient:
             "Accept-Language": "en-US,en;q=0.9",
             "Connection": "keep-alive",
         })
+        try:
+            self.options.cookies = ctx.cookies
+        except:
+            pass
 
         if self.options.cookies:
             self.session.cookies.update(self.options.cookies)

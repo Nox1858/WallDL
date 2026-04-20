@@ -541,7 +541,7 @@ def main():
         case "compare-local":
             compare(args[2:])
         case "compare-global":
-            compare(args[2:],local=False)
+            compare(args[2:],glocal=False)
         case "prevsearch":
             with open("prevsearch.txt","r") as f: name = f.read()
             print(name)
