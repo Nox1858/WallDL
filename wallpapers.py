@@ -21,6 +21,7 @@ from concurrent.futures.process import BrokenProcessPool
 
 #Custom Stuff
 from dl_library import *
+from stats_library import *
 
 import filters
 
@@ -463,40 +464,42 @@ def update_faves(ctx, getnum = 99):
     else:
         print("no new images found :(")
 
-def getcount(tags):
+def getLocalCount(tags):
     # print(tags)
     selectimgs = cache.get(querry = tags)
     if(not selectimgs): selectimgs = filterImgs(tags)
     return len(selectimgs)
 
 
-def getstats(querry):
-    total = getcount(querry)
+def getLocalStats(querry):
+    total = getLocalCount(querry)
     if(total == 0):
         return False
     querry.append("rating:general")
-    safe = getcount(querry)
+    safe = getLocalCount(querry)
     querry.remove("rating:general")
     querry.append("rating:questionable")
-    questionable = getcount(querry)
+    questionable = getLocalCount(querry)
     querry.remove("rating:questionable")
     querry.append("rating:sensitive")
-    sensitive = getcount(querry)
+    sensitive = getLocalCount(querry)
     querry.remove("rating:sensitive")
     querry.append("rating:explicit")
-    explicit = getcount(querry)
+    explicit = getLocalCount(querry)
     querry.remove("rating:explicit")
     return [total, safe, questionable, sensitive, explicit]
-
 
 def perc(number,total):
     return f"{int(number*10000/total)/100}%"
 
-def compare(stuff):
+def compare(stuff,local=True):
     entries = {}
     for thing in stuff:
         querry = thing.split("++")
-        qerstats = getstats(querry)
+        if(local):
+            qerstats = getLocalStats(querry)
+        else:
+            qerstats = getGlobalStats(ctx, querry)
         if(qerstats):
             entries[str(querry)] = qerstats
         else:
@@ -526,6 +529,10 @@ def main():
         #     quickdl() #ended up being slower than whathever I did last time, dunno how, appearently I did well...
         case "compare":
             compare(args[2:])
+        case "compare-local":
+            compare(args[2:])
+        case "compare-global":
+            compare(args[2:],local=False)
         case "prevsearch":
             with open("prevsearch.txt","r") as f: name = f.read()
             print(name)
