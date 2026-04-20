@@ -45,12 +45,3 @@ class ImageStorage:
         path.write_bytes(content)
         return path
 
-    def existsByPostId(self, postID: int | str) -> bool:
-        postID = str(postID)
-        for item in self.wallpaperDir.iterdir():
-            if(item.is_file() and item.stem == postID):
-                return True
-
-        #with open("downloaded.txt","a") as f: f.write(str(postID)+"\n")
-        return False
-

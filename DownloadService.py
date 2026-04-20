@@ -54,10 +54,6 @@ class DownloadService:
             print(f"Failed to download {postID} due to wrong file Format, conversion not implemented")
             return DownloadPostResult(failed=True)
 
-        if self.storage.existsByPostId(postID):
-            print(f"Skipped Post {postID}, already exists")
-            return DownloadPostResult(skippedExisting=True)
-
         try:
             timer = time.time_ns()
             content = self.client.downloadImageBytes(fileURL)
@@ -92,6 +88,15 @@ class DownloadService:
             printtime(timer, f"Got {len(posts)} Posts in: ")
 
             candidates = posts[:remaining]
+            timer = time.time_ns()
+            for item in self.storage.wallpaperDir.iterdir():
+                for post in candidates:
+                    if(item.stem == str(post["id"])): #removed item.is_file() since it makes it over 4x  slower for whathever reason (just don't put anything but wallpaper images in that folder)
+                        result.stats.skippedExisting += 1
+                        candidates.remove(post)
+            # if(len(candidates) < remaining and len(candidates) > 0): # in case you actually want your limit of images, but since we decrease the return size each time this can take a while
+            #     triesLeft += 1
+            printtime(timer, f"Checked existing and found {len(candidates)} in: ")
 
             with ThreadPoolExecutor(max_workers=self.maxThreads) as executor:
                 futures = {
@@ -101,10 +106,6 @@ class DownloadService:
                 for future in as_completed(futures):
                     result.stats.attempted += 1
                     downloadResult = future.result()
-
-                    if(downloadResult.skippedExisting):
-                        result.stats.skippedExisting += 1
-                        continue
 
                     if(downloadResult.failed):
                         print("Failed")
