@@ -6,16 +6,16 @@
 - Gel API access
 
 ## Getting Started
-### Linux with Plasma Desktop:
+## Linux with Plasma Desktop:
     1. clone the repository
     2. run setup.py and follow instructions
     3. run wallpapers.py help to see possible options
-### MacOS
+## MacOS
     1. clone the repository
     2. run setup.py and follow instructions
      - note that you should use subfolders of WallDL since you'll probably run into permission errors otherwise
     3. run wallpapers.py help to see possible options
-### Android
+## Android
     1. Install [termux](https://f-droid.org/en/packages/com.termux/) (the playstore version is not tested and might not work)
     2. Install [termux-api](https://f-droid.org/en/packages/com.termux.api/)
     3. check if python is installed 'pkg install python'
