@@ -14,7 +14,7 @@ def add_occurance(img_id, ctx: AppContext):
     setData(img_id, imgdata, ctx.cache_dir)
 
 def setWallpaper_Android(wallpaper_path, img_id, ctx: AppContext):
-    subprocess.Popen(f'am start -a android.intent.action.ATTACH_DATA -t "image/*" -d file:{wallpaper_path}', shell=True)
+    subprocess.Popen(f'termux-wallpaper -f {wallpaper_path}', shell=True)
     add_occurance(img_id, ctx)
 
 
