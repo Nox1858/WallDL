@@ -1,6 +1,6 @@
 import subprocess
 import time
-import Environment
+from env import Environment
 
 def printtime(timer: int,message="",notification=False,out=True) -> int:
     timeval = (time.time_ns()-timer)
