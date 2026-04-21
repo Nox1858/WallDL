@@ -27,7 +27,7 @@ def formattime(timenum: int):
 
 def notify(message: str):
     env = Environment(".env")
-    dm = env.get(DESKTOP_MANAGER)
+    dm = env.get("DESKTOP_MANAGER")
     match dm:
         case "Plasma":
             subprocess.Popen(f'notify-send "{message}"', shell=True)
