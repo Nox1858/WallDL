@@ -1,5 +1,6 @@
 import subprocess
 import time
+import Environment
 
 def printtime(timer: int,message="",notification=False,out=True) -> int:
     timeval = (time.time_ns()-timer)
@@ -25,4 +26,13 @@ def formattime(timenum: int):
     return str(timenum)[:6]+timesize
 
 def notify(message: str):
-    subprocess.Popen(f'notify-send "{message}"', shell=True)
+    env = Environment(".env")
+    dm = env.get(DESKTOP_MANAGER)
+    match dm:
+        case "Plasma":
+            subprocess.Popen(f'notify-send "{message}"', shell=True)
+        case "MacOS":
+            print("notify for macos not implemented")
+        case "Android":
+            print("notify for android not implemented")
+
