@@ -459,7 +459,7 @@ def main():
         case "prev":
             try:
                 imid = getprevwall(args[2])
-                notify("set previous",args[2],"steps back")
+                notify(f"set previous {args[2]} steps back")
             except:
                 imid = getprevwall(1)
                 notify("set previous")
