@@ -102,6 +102,8 @@ cache_list" lists all entries in cache
 
 "taginfo" WIP
 
+"tagsearch" [querry1 querry2 ...] searches locally saved tag database for matches and returnes them in ascending order (example: "jujutsu" gives "jujutsu_kaisen" and then a bunch of characters from jujutsu kaisen like "name_(jujutsu_kaisen)")
+
 "help" prints this thing here
 
 If you pass an argument that is not in this list it'll cache a new search using the first argument as the name and the remaining ones as tags and subsequently you can access this search by just using the name (so just "./wallpapers.py NAME")
