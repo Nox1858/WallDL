@@ -15,8 +15,6 @@ from random import randrange
 from datetime import datetime as d
 from datetime import timedelta
 
-from threading import Thread
-
 from concurrent.futures.process import BrokenProcessPool
 
 #Custom Stuff
@@ -109,142 +107,13 @@ cache_list" lists all entries in cache
 If you pass an argument that is not in this list it'll cache a new search using the first argument as the name and the remaining ones as tags and subsequently you can access this search by just using the name (so just "./wallpapers.py NAME")
 
 """
+selectimgs = []
 
-fullTagData = {}
-ImgThreads = []
-InitThreads = []
-ReqThreads = []
-allTagRequests = {}
-totalDLTime = []
-totalSaveTime = []
-totalDLSize = []
-totalPostReqTime = []
-rawReqTimes = []
-rawDLTimes = []
 
 def setflag(imgid,flag):
     data = getData(imgid, ctx.cache_dir)
     data["flag"] = flag
     setData(imgid,data, ctx.cache_dir)
-
-
-def initdata(imgid,predata,fix=False):
-    timecounter = time.time_ns()
-    # print("initializing data for",imgid)
-    tags = predata["tags"]
-    artist = []; copyright = []; character = []; meta = []; general = []; failed = []
-    try:
-        tags = tags.split()
-    except:
-        True
-    for tag in tags:
-        try:
-            tagtype = fullTagData[tag]["type"]
-            match tagtype:
-                case "general": general.append(tag)
-                case "artist": artist.append(tag)
-                case "copyright": copyright.append(tag)
-                case "character": character.append(tag)
-                case "meta": meta.append(tag)
-                case "unknown":
-                    print("found tag with unknown type:",tag,tagtype)
-                    general.append(tag)
-                    with open("unknowntags.txt","a") as f: f.write(tag+"\n")
-        except Exception as e:
-            print("failed to find",tag,e)
-            failed.append(tag)
-
-    if(fix):
-        if(len(artist) == 0):
-            print(imgid,"doesn't have an artist, setting unknown. Link:",predata["url"])
-            artist = ["_unknown_"]
-        data = {
-            "download-date":predata["download-date"],
-            "flag":predata["flag"],
-            "rating":predata["rating"],
-            "width":predata["width"],
-            "height":predata["height"],
-            "artist":artist,
-            "character":character,
-            "copyright":copyright,
-            "meta":meta,
-            "tags":tags,
-            "url":predata["url"]
-            }
-    else:
-        if(len(artist) == 0):
-            print(imgid,"doesn't have an artist, setting unknown. Link:",predata["file_url"])
-            artist = ["_unknown_"]
-        data = {
-            "download-date":str(d.now()),
-            "flag":"none",
-            "rating":predata["rating"],
-            "width":predata["width"],
-            "height":predata["height"],
-            "artist":artist,
-            "character":character,
-            "copyright":copyright,
-            "meta":meta,
-            "tags":tags,
-            "url":predata["file_url"]
-            }
-
-    setData(imgid,data, ctx.cache_dir)
-    if(len(failed) == 0): return False
-    return failed
-    # printtime(timecounter,f"handled tags for {imgid} in: ")
-
-
-def handleTagRequests(fixing=False):
-    timecounter = time.time_ns()
-    fullRequests = {}
-    for req in allTagRequests:
-        tags = allTagRequests[req]["tags"]
-        try:
-            tags = tags.split()
-        except:
-            True
-        for tag in tags:
-            #Checks if data on a tag is present, otherwise or if too old add to update list
-            try:
-                tagdata = fullTagData[tag]
-                date = d.strptime((tagdata["date-added"]), "%Y-%m-%d %H:%M:%S.%f")
-                if(d.now()-date > timedelta(days = 10)):
-                    # print("updating",tag,"since it's more than 10d old'")
-                    fullRequests[tag] = True
-            except Exception as e:
-                fullRequests[tag] = True
-    print("need to update",len(fullRequests),"tags...")
-    # printtime(timecounter,"tagrequest setup overhead: ")
-    # time.sleep(3)
-    while(len(fullRequests) > 0):
-        reqs = []
-        while(len(reqs) < 100 and len(fullRequests) > 0):
-            for thing in fullRequests:
-                value = thing
-                break
-            fullRequests.pop(value)
-            reqs.append(value)
-        if(len(fullRequests) > 0):
-            t1 = Thread(target=handleTagWebRequest, args=[reqs, ctx])
-            t1.start()
-            ReqThreads.append(t1)
-        else:
-            handleTagWebRequest(reqs, ctx)
-    # print("started threads, waiting on finish")
-    # time.sleep(3)
-    for t in ReqThreads:
-        t.join()
-    # print("all req threads done, startign initdata threads...")
-    # time.sleep(20)
-    for imgid in allTagRequests:
-        t2 = Thread(target=initdata, args=(imgid,allTagRequests[imgid],fixing))
-        t2.start()
-        InitThreads.append(t2)
-
-
-selectimgs = []
-
 
 def filterImgs(args, quiet = True):
     parsedArgs = filters.parseLocalArgs(args)
@@ -365,26 +234,6 @@ def fixALLImgTags(maxnum=10):
             print(f"Could not Fix Tags for {img}")
 
     printtime(timecounter,f"fixed all tags in: ")
-
-
-"""
-    fixThreads = []
-    for i in range(maxnum):
-        imgid = tofix.pop(randrange(0,len(tofix)))
-        fixing.append(imgid)
-        t1 = Thread(target=fixImgTags, args=(imgid,))
-        t1.start()
-        fixThreads.append(t1)
-    print("prepared all threads to fix images.")
-    for t in fixThreads:
-        t.join()
-    # for imgid in tofix:
-    #     setflag(imgid,"-")
-    for imgid in fixing:
-        setflag(imgid,"fixed")
-    print("(hopefully) fixed",len(fixing),"images.",len(tofix),"remaining")
-"""
-
 
 def quickrandexist():
     images = [f for f in os.listdir(Wallpaper_Folder)]
@@ -529,6 +378,29 @@ def compare(stuff,glocal=True):
     for i in range(6):
         print(out[i])
 
+def tagsearch(args):
+    #TODO: maybe reimplement check for tagdata age to update counts
+    with open(f"{ctx.cache_dir}/tagdata.json") as f: fullTagData = json.load(f)
+    for arg in args:
+        results = []
+        for tag in fullTagData:
+            if(arg in tag):
+                count = fullTagData[tag]["count"]
+                results.append((tag,count))
+        print(f"found {len(results)} results for {arg}:")
+        results.sort(key=lambda tup: tup[1], reverse=True)
+        for res in results:
+            print(f" {res[1]:>7} {res[0]}")
+
+    ['general', 'meta', 'copyright', 'artist', 'character', 'unknown']
+            # count
+            # type
+
+    # print(fullTagData)
+    # print(types)
+    print(args)
+
+
 def main():
     timecounter = time.time_ns()
     result = False
@@ -540,6 +412,8 @@ def main():
     match args[1]:
         # case "qgr":
         #     quickdl() #ended up being slower than whathever I did last time, dunno how, appearently I did well...
+        case "tagsearch":
+            tagsearch(args[2:])
         case "compare":
             compare(args[2:])
         case "compare-local":
