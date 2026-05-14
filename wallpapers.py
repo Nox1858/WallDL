@@ -415,7 +415,8 @@ def fix_vids(max_files: int):
         if(extension in {".mp4", ".webm"}):
             convert = True
             for image_2 in images:
-                if(imgid in image_2 and image != image_2):
+                imgid_2 = image_2[:image.find(".")]
+                if(imgid == imgid_2 and image != image_2):
                     print("found duplicate:",image_2)
                     if("gif" in image_2):
                         print("dupe is a gif, deleting original...")
