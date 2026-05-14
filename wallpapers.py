@@ -458,8 +458,10 @@ def main():
                 input_path = args[2]
                 output_name = args[3]
                 os.makedirs(COPY_OUT_PATH+"gifs/",exist_ok=True)
+                out_path = input_path[:input_path.rfind("/")]
+                print(out_path)
                 print("converting",input_path,f"to {output_name}.gif...")
-                convert_vid(f"\"{input_path}\"",f"{COPY_OUT_PATH}gifs/{output_name}.gif")
+                convert_vid(f"\"{input_path}\"",f"{out_path}/{output_name}.gif")
             except Exception as e:
                 print("failed:",e)
         case "fix_vids":
