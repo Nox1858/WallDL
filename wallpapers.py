@@ -4,7 +4,6 @@ import requests
 import json
 import os
 from ntpath import join
-import subprocess
 import time
 
 import shutil
@@ -31,6 +30,10 @@ from cache import SearchCache
 from AppContext import AppContext
 from webreq_helpers import GelbooruClient
 from TagService import TagService
+
+from ba import set_ba, run_ba
+from vid_fixer import convert_vid
+from wallpaper_setters import setRawWallpaper
 
 env = Environment(".env")
 
@@ -103,6 +106,12 @@ cache_list" lists all entries in cache
 "taginfo" WIP
 
 "tagsearch" [querry1 querry2 ...] searches locally saved tag database for matches and returnes them in ascending order (example: "jujutsu" gives "jujutsu_kaisen" and then a bunch of characters from jujutsu kaisen like "name_(jujutsu_kaisen)")
+
+"fix_vids [max_files (default 10)]" converts all downloaded mp4/webm videos to gifs using ffmpeg. MAKE SURE FFMPEG IS INSTALLED AND YOUR PC IS POWERFULL ENOUGH as converting multiple gifs can cause major performance issues or take a while. If unsure, add max_files flag.
+
+"convert_vid path/to/input/file.videofile OUTPUT_NAME" can take ANY file (on MAC must be in a subfolder of home) and convert it to a gif in copyout. Make sure there are no spaces in the filepath as ffmpeg doesn't like that. ALSO USES FFMPEG
+
+"setrawpaper path/to/wallpaper.image" sets the given image as wallpaper and doesn't modify any other things (same as setting it normally in systemsettings kinda)
 
 "help" prints this thing here
 
@@ -393,14 +402,40 @@ def tagsearch(args):
         results.sort(key=lambda tup: tup[1], reverse=True)
         for res in results:
             print(f" {res[1]:>7} {res[0]}")
-
-    ['general', 'meta', 'copyright', 'artist', 'character', 'unknown']
-            # count
-            # type
-
-    # print(fullTagData)
-    # print(types)
+    # ['general', 'meta', 'copyright', 'artist', 'character', 'unknown']
     print(args)
+
+
+def fix_vids(max_files: int):
+    images = [f for f in os.listdir(Wallpaper_Folder)]
+    vids = 0
+    for image in images:
+        extension = image[image.find("."):]
+        imgid = image[:image.find(".")]
+        if(extension in {".mp4", ".webm"}):
+            convert = True
+            for image_2 in images:
+                if(imgid in image_2 and image != image_2):
+                    print("found duplicate:",image_2)
+                    if("gif" in image_2):
+                        print("dupe is a gif, deleting original...")
+                        convert = False
+                        print("deleting",f"{Wallpaper_Folder}{image}")
+                        os.remove(f"{Wallpaper_Folder}{image}")
+            if(convert):
+                print("found video:",image,"starting conversion...")
+                try:
+                    if(convert_vid(f"{Wallpaper_Folder}{image}",f"{Wallpaper_Folder}/{imgid}.gif")):
+                        vids += 1
+                    else:
+                        print("failed to convert",image)
+                except Exception as e:
+                    print(e)
+            else:
+                print("Skipped",image)
+        if(vids >= max_files):
+            break
+    print(f"started conversion of {vids} vids")
 
 
 def main():
@@ -414,6 +449,41 @@ def main():
     match args[1]:
         # case "qgr":
         #     quickdl() #ended up being slower than whathever I did last time, dunno how, appearently I did well...
+        case "setrawpaper":
+            print("setting",args[2])
+            setRawWallpaper(args[2],ctx)
+
+        case "convert_vid":
+            try:
+                input_path = args[2]
+                output_name = args[3]
+                os.makedirs(COPY_OUT_PATH+"gifs/",exist_ok=True)
+                print("converting",input_path,f"to {output_name}.gif...")
+                convert_vid(f"\"{input_path}\"",f"{COPY_OUT_PATH}gifs/{output_name}.gif")
+            except Exception as e:
+                print("failed:",e)
+        case "fix_vids":
+            try:
+                max_files = int(args[2])
+            except:
+                max_files = 10
+            fix_vids(max_files)
+        case "set_ba":
+            badir = False
+            try:
+                badir = ctx.ba
+            except:
+                print("BA directory not in env, please add \"BA_DIR=path/to/frames/folder\" to your env file")
+            if(badir):
+                set_ba(badir,ctx)
+        case "play_ba":
+            badir = False
+            try:
+                badir = ctx.ba
+            except:
+                print("Frame directory not in env, please add \"BA_DIR=path/to/frames/folder\" to your env file")
+            if(badir):
+                run_ba(badir,ctx)
         case "tagsearch":
             tagsearch(args[2:])
         case "compare":

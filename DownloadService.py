@@ -51,8 +51,9 @@ class DownloadService:
         extension = Path(post["image"]).suffix
 
         if(extension in {".mp4", ".webm"}):
-            print(f"Failed to download {postID} due to wrong file Format, conversion not implemented")
-            return DownloadPostResult(failed=True)
+            print(f"{postID} is a video, still downloading, remember to run \"convert_vids\" afterwards!!")
+            # print(f"Failed to download {postID} due to wrong file Format, conversion not implemented")
+            # return DownloadPostResult(failed=True)
 
         try:
             timer = time.time_ns()

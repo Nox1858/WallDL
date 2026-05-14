@@ -36,3 +36,7 @@ class AppContext:
     def cookies(self) -> dict[str : str]:
         data = json.loads(self.env.get("COOKIES"))
         return dict(data)
+
+    @property
+    def ba(self) -> Path:
+        return Path(self.env.get("BA_DIR"))
