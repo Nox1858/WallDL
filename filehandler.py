@@ -34,14 +34,21 @@ def checkExisting(imgid: int, wallpaperFolder: str ,sendnote = True) -> bool:
 
 
 class ImageStorage:
-    def __init__(self, wallpaperDir: Path):
+    def __init__(self, wallpaperDir: Path, copyoutDir: Path):
         self.wallpaperDir = wallpaperDir
+        self.copyoutDir = copyoutDir
 
     def imagePath(self, postID: int | str, extension: str) -> Path:
         return self.wallpaperDir / f"{postID}{extension}"
 
-    def saveImage(self,  postID: int | str, extension: str, content: bytes) -> Path:
-        path = self.imagePath(postID,extension)
+    def copyoutPath(self, postID: int | str, extension: str) -> Path:
+        return self.copyoutDir / f"videos/{postID}{extension}"
+
+    def saveImage(self,  postID: int | str, extension: str, content: bytes, copyout = False) -> Path:
+        if(copyout):
+            path = self.copyoutPath(postID,extension)
+        else:
+            path = self.imagePath(postID,extension)
         path.write_bytes(content)
         return path
 

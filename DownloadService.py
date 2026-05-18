@@ -6,6 +6,7 @@ import time
 from webreq_helpers import PostQuery, GelbooruClient
 from filehandler import ImageStorage
 from timer import printtime
+from wallpapers import copyout
 
 @dataclass
 class DownloadStats:
@@ -21,6 +22,7 @@ class DownloadPostResult:
     downloaded : bool = False
     skippedExisting : bool = False
     failed : bool = False
+    size: int = 0
 
 @dataclass
 class DownloadBatchResult:
@@ -38,6 +40,22 @@ class DownloadOptions:
     download: bool = True
     setWallpaper: bool = True
 
+
+def convertSize(size: int):
+    if(size > 1024):
+        size /= 1024
+        if(size > 1024):
+            size /= 1024
+            if(size > 1024):
+                size /= 1024
+                return int(size*100)/100, "GB"
+            else:
+                return int(size*100)/100, "mB"
+        else:
+            return int(size*100)/100, "kB"
+    else:
+        return int(size*100)/100, "Bytes"
+
 class DownloadService:
 
     def __init__(self, client: GelbooruClient, storage: ImageStorage):
@@ -49,21 +67,27 @@ class DownloadService:
         postID = post["id"]
         fileURL = post["file_url"]
         extension = Path(post["image"]).suffix
-
-        if(extension in {".mp4", ".webm"}):
-            print(f"{postID} is a video, still downloading, remember to run \"convert_vids\" afterwards!!")
-            # print(f"Failed to download {postID} due to wrong file Format, conversion not implemented")
-            # return DownloadPostResult(failed=True)
-
         try:
             timer = time.time_ns()
             content = self.client.downloadImageBytes(fileURL)
-            self.storage.saveImage(postID, extension, content)
-            printtime(timer, f"Downloaded Post {postID} in: ")
+            sizeB = len(content)
+            sizeF = convertSize(sizeB)
+            copy = False
+            if(extension in {".mp4", ".webm"}):
+                print(f"{postID} is a video, still downloading, remember to run \"convert_vids\" afterwards!!")
+                if(sizeF[1] == "mB" and sizeF[0] > 12):
+                    print(f"gif conversion is expected to use 20x storage, {postID} will be copied out to avoid cluttering drive. If you want it anyways, copy it back in and proceed as normal")
+                    copy = True
+            if(sizeF[1] == "GB"):
+                print(f"{posID} is enourmous, how did you even find this?!")
+
+            self.storage.saveImage(postID, extension, content, copy)
+            printtime(timer, f"Downloaded Post {postID}, {sizeF[0]} {sizeF[1]} in: ")
             return DownloadPostResult(
                 post=post,
                 filename=f"{postID}{extension}",
                 downloaded=True,
+                size = sizeB
             )
         except Exception as e:
             print(e)

@@ -140,6 +140,8 @@ def filterImgs(args, quiet = True):
     return images
 
 def copyout(image,folder = ""):
+    print("copying",image,"to",folder)
+    os.makedirs(f"{COPY_OUT_PATH}{folder}",exist_ok=True)
     shutil.copyfile(Wallpaper_Folder+image, COPY_OUT_PATH+folder+image)
 
 def randomExist(ctx, args = [],copy=False,copydest="",name=None):
@@ -179,7 +181,7 @@ def randomExist(ctx, args = [],copy=False,copydest="",name=None):
     # printtime(timecounter,"filtered images in ")
     if(len(selectimgs) == 0):
         notify("failed to find images with given filter")
-    if(len(selectimgs) == 1):
+    elif(len(selectimgs) == 1):
         notify("Congratulations, you found a perfect match!!")
         setWallpaper(selectimgs[0], ctx)
     else:
@@ -436,7 +438,8 @@ def fix_vids(max_files: int):
                 print("Skipped",image)
         if(vids >= max_files):
             break
-    print(f"started conversion of {vids} vids")
+    #TODO check whether FFMPEG stuff is still running
+    print(f"started conversion of {vids} vids, be sure to open taskmanager and only run fix_vids again when NO FFMPEG PROCESSES ARE RUNNING (WIP to make this better...)")
 
 
 def main():
@@ -458,7 +461,6 @@ def main():
             try:
                 input_path = args[2]
                 output_name = args[3]
-                os.makedirs(COPY_OUT_PATH+"gifs/",exist_ok=True)
                 out_path = input_path[:input_path.rfind("/")]
                 print(out_path)
                 print("converting",input_path,f"to {output_name}.gif...")

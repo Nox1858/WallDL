@@ -58,6 +58,7 @@ def get(args: list[str], ctx: AppContext, quiet: bool = False, setwall: bool = T
 
     tagdataPath = ctx.cache_dir / "tagdata.json"
     wallpaperDir = ctx.wallpaper_dir
+    copyoutDir = ctx.copyout_dir
 
     options = parseDownloadArgs(args, defaultMaxTries=maxTries)
 
@@ -66,7 +67,7 @@ def get(args: list[str], ctx: AppContext, quiet: bool = False, setwall: bool = T
 
 
     client = GelbooruClient(ctx)
-    storage = ImageStorage(wallpaperDir)
+    storage = ImageStorage(wallpaperDir, copyoutDir)
     downloadService = DownloadService(client, storage)
     tagService = TagService(client)
 

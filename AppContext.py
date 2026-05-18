@@ -22,6 +22,10 @@ class AppContext:
         return Path(self.env.get("WALLPAPER_IMAGES"))
 
     @property
+    def copyout_dir(self) -> Path:
+        return Path(self.env.get("COPY_OUTPUT_DESTINATION"))
+
+    @property
     def cache_dir(self) -> Path:
         return Path(self.env.get("WALLPAPER_CACHE"))
 
