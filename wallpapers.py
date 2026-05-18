@@ -32,7 +32,7 @@ from webreq_helpers import GelbooruClient
 from TagService import TagService
 
 from ba import set_ba, run_ba
-from vid_fixer import convert_vid
+from vid_fixer import convert_vid, fix_vids
 from wallpaper_setters import setRawWallpaper
 
 env = Environment(".env")
@@ -407,41 +407,6 @@ def tagsearch(args):
     # ['general', 'meta', 'copyright', 'artist', 'character', 'unknown']
     print(args)
 
-
-def fix_vids(max_files: int):
-    images = [f for f in os.listdir(Wallpaper_Folder)]
-    vids = 0
-    for image in images:
-        extension = image[image.find("."):]
-        imgid = image[:image.find(".")]
-        if(extension in {".mp4", ".webm"}):
-            convert = True
-            for image_2 in images:
-                imgid_2 = image_2[:image.find(".")]
-                if(imgid == imgid_2 and image != image_2):
-                    print("found duplicate:",image_2)
-                    if("gif" in image_2):
-                        print("dupe is a gif, deleting original...")
-                        convert = False
-                        print("deleting",f"{Wallpaper_Folder}{image}")
-                        os.remove(f"{Wallpaper_Folder}{image}")
-            if(convert):
-                print("found video:",image,"starting conversion...")
-                try:
-                    if(convert_vid(f"{Wallpaper_Folder}{image}",f"{Wallpaper_Folder}/{imgid}.gif")):
-                        vids += 1
-                    else:
-                        print("failed to convert",image)
-                except Exception as e:
-                    print(e)
-            else:
-                print("Skipped",image)
-        if(vids >= max_files):
-            break
-    #TODO check whether FFMPEG stuff is still running
-    print(f"started conversion of {vids} vids, be sure to open taskmanager and only run fix_vids again when NO FFMPEG PROCESSES ARE RUNNING (WIP to make this better...)")
-
-
 def main():
     timecounter = time.time_ns()
     result = False
@@ -472,7 +437,7 @@ def main():
                 max_files = int(args[2])
             except:
                 max_files = 10
-            fix_vids(max_files)
+            fix_vids(max_files,Wallpaper_Folder)
         case "set_ba":
             badir = False
             try:

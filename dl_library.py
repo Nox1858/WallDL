@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from datetime import datetime
 import time
-import subprocess
+# import subprocess
 
 from AppContext import AppContext
 from timer import printtime, notify
