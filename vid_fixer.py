@@ -37,7 +37,6 @@ def fix_vids(max_files: int, Wallpaper_Folder: Path):
                 print("Skipped",image)
         if(vids >= max_files):
             break
-    #TODO check whether FFMPEG stuff is still running
     print(f"started conversion of {vids} vids...")
     while(True):
         checker = subprocess.run('ps -C ffmpeg | wc -l', shell= True, capture_output=True, text = True)

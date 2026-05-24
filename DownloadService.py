@@ -75,8 +75,8 @@ class DownloadService:
             copy = False
             if(extension in {".mp4", ".webm"}):
                 print(f"{postID} is a video, still downloading, remember to run \"convert_vids\" afterwards!!")
-                if(sizeF[1] == "mB" and sizeF[0] > 12):
-                    print(f"gif conversion is expected to use 20x storage, {postID} will be copied out to avoid cluttering drive. If you want it anyways, copy it back in and proceed as normal")
+                if(sizeF[1] == "mB" and sizeF[0] > 10):
+                    print(f"gif conversion is expected to use > 20x storage, {postID} will be copied out to avoid cluttering drive. If you want it anyways, copy it back in and proceed as normal")
                     copy = True
             if(sizeF[1] == "GB"):
                 print(f"{posID} is enourmous, how did you even find this?!")

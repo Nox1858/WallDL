@@ -113,6 +113,8 @@ cache_list" lists all entries in cache
 
 "setrawpaper path/to/wallpaper.image" sets the given image as wallpaper and doesn't modify any other things (same as setting it normally in systemsettings kinda)
 
+"parsefile pathh/to/file" reads the file and starts a get() using each line in the file as input
+
 "help" prints this thing here
 
 If you pass an argument that is not in this list it'll cache a new search using the first argument as the name and the remaining ones as tags and subsequently you can access this search by just using the name (so just "./wallpapers.py NAME")
@@ -533,6 +535,19 @@ def main():
                 return
             notify(f"flagged {flag}")
             setflag(latestImg(),flag)
+
+        case "parsefile":
+            things = False
+            try:
+                infile = args[2]
+                with open(infile, "r") as f: things = f.readlines()
+            except:
+                print("please supply a valid path")
+            if(things):
+                for thing in things:
+                    tags = thing.split()
+                    print("getting",tags)
+                    get(tags,ctx)
 
         case "get":
             get(args[2:],ctx)

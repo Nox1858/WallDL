@@ -43,6 +43,8 @@ def parseDownloadArgs(args: list[str], defaultMaxTries: int = 5) -> DownloadOpti
 
         else:
             options.tags.append(arg)
+            if("id:" in arg):
+                safe = False
 
     if options.limit > 400:
         options.maxTries = max(options.maxTries, int(options.limit / 100) + 1)
